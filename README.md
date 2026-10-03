@@ -49,3 +49,4 @@ believe this plugin improves on that one in a few key ways:
 
 #### Fork extras
   - denser layout, removes newlines between `key`s and `value`s
+  - use spaces for indents
