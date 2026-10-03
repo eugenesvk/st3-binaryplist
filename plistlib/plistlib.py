@@ -110,10 +110,7 @@ class UID:
 
 
 # XML 'header'
-PLISTHEADER = b"""\
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-"""
+PLISTHEADER = b"""<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">"""
 
 
 # Regex to find any control chars, except for \t \n and \r
@@ -317,16 +314,16 @@ class _DumbXMLWriter:
 
     def begin_element(self, element):
         self.stack.append(element)
-        self.writeln("<%s>" % element)
+        self.writex("<%s>" % element)
         self._indent_level += 1
 
     def end_element(self, element):
         assert self._indent_level > 0
         assert self.stack.pop() == element
         self._indent_level -= 1
-        self.writeln("</%s>" % element)
+        self.writex("</%s>" % element)
 
-    def simple_element(self, element, value=None):
+    def simple_element(self, element, value=None, nl=True):
         if value is not None:
             value = _escape(value)
             self.writeln("<%s>%s</%s>" % (element, value, element))
@@ -334,7 +331,7 @@ class _DumbXMLWriter:
         else:
             self.writeln("<%s/>" % element)
 
-    def writeln(self, line):
+    def writeln(self, line, nl=True):
         if line:
             # plist has fixed encoding of utf-8
 
@@ -343,8 +340,9 @@ class _DumbXMLWriter:
                 line = line.encode('utf-8')
             self.file.write(self._indent_level * self.indent)
             self.file.write(line)
-        self.file.write(b'\n')
-
+        if nl: self.file.write(b'\n')
+    def writex (self, line, nl=False):
+      self.writeln(   line, nl)
 
 class _PlistWriter(_DumbXMLWriter):
     def __init__(
@@ -361,7 +359,7 @@ class _PlistWriter(_DumbXMLWriter):
     def write(self, value):
         self.writeln("<plist version=\"1.0\">")
         self.write_value(value)
-        self.writeln("</plist>")
+        self.writex("</plist>")
 
     def write_value(self, value):
         if isinstance(value, str):
@@ -420,7 +418,7 @@ class _PlistWriter(_DumbXMLWriter):
                     if self._skipkeys:
                         continue
                     raise TypeError("keys must be strings")
-                self.simple_element("key", key)
+                self.simple_element("key", key, nl=False)
                 self.write_value(value)
             self.end_element("dict")
 
