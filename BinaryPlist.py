@@ -11,66 +11,43 @@ import collections
 SYNTAX_FILE = 'Packages/BinaryPlist/Property_List.tmLanguage'
 
 def is_syntax_set(view=None):
-  if view is None:
-    view = sublime.active_window().active_view()
+  if view is None: view = sublime.active_window().active_view()
   return 'Property_List.tmLanguage' in view.settings().get('syntax')
 
 def is_binary_plist(view):
-  return (view.substr(Region(0,8)) == 'bplist00' or 
-    view.substr(Region(0,19)) == '6270 6c69 7374 3030')
+  return (view.substr(Region(0, 8)) == 'bplist00' \
+    or    view.substr(Region(0,19)) == '6270 6c69 7374 3030')
 
 def keys_to_strings(data):
-  if isinstance(data, bytes):
-      return data.decode('utf-8')
-  elif isinstance(data, collections.Mapping):
-      return dict(map(keys_to_strings, data.items()))
-  elif isinstance(data, collections.Iterable):
-      return type(data)(map(keys_to_strings, data))
-  else:
-      return data
+  if   isinstance(data,            bytes    ): return      data.decode('utf-8')
+  elif isinstance(data,collections.Mapping  ): return       dict(map(keys_to_strings, data.items()))
+  elif isinstance(data,collections.Iterable ): return type(data)(map(keys_to_strings, data        ))
+  else:                                        return      data
 
 
 class BinaryPlistCommand(EventListener):
-  def on_load(self, view):
-    # Check if binary, convert to XML, mark as "was binary"
+  def on_load(self, view): # Check if binary, convert to XML, mark as "was binary"
     # print('on_load')
-    if is_binary_plist(view):
-      view.run_command('binary_plist_toggle')
-    
-  def on_post_save(self, view):
+    if is_binary_plist(view): view.run_command('binary_plist_toggle')
+
+  def on_post_save(self, view): # Convert back to XML
     # print('on_post_save')
-    # Convert back to XML
-    if view.get_status('is_binary_plist'):
-      view.run_command('binary_plist_toggle', {'force_to':True})
+    if view.get_status('is_binary_plist'): view.run_command('binary_plist_toggle',{'force_to':True})
 
-  def on_new(self, view):
-    pass
-    # print('on_new')
-
-  def on_clone(self, view):
-    pass
-    # print('on_clone')
-
+  def on_new      (self, view):
+    pass # print('on_new')
+  def on_clone    (self, view):
+    pass # print('on_clone')
   def on_pre_close(self, view):
-    pass
-    # print('on_pre_close')
-
-  def on_close(self, view):
-    pass
-    # print('on_close')
-
+    pass # print('on_pre_close')
+  def on_close    (self, view):
+    pass # print('on_close')
   def on_pre_save(self, view):
-    pass
-    # print('on_pre_save')
-
+    pass # print('on_pre_save')
   def on_modified(self, view):
-    if is_binary_plist(view):
-      view.run_command('binary_plist_toggle')
-
-
+    if is_binary_plist(view): view.run_command('binary_plist_toggle')
   def on_activated(self, view):
-    pass
-    # print('on_activated')
+    pass # print('on_activated')
 
 class BinaryPlistToggleCommand(TextCommand):
   def to_xml_plist(self, edit, view):
@@ -81,10 +58,9 @@ class BinaryPlistToggleCommand(TextCommand):
       with open(file_name, 'rb') as fp:
         pl = plistlib.load(fp)
       full_text = plistlib.dumps(pl).decode('utf-8')
-      if "�" in full_text:
-        sublime.message_dialog("This file contains “�” characters, likely due to control characters in strings.\n\nIf you save the file, these replacement characters will remain.")
+      if "�" in full_text: sublime.message_dialog("This file contains “�” characters, likely due to control characters in strings.\n\nIf you save the file, these replacement characters will remain.")
       # print("view.size()={0}".format(view.size()))
-      view.replace(edit, Region(0, view.size()), full_text)
+      view.replace (edit, Region(0, view.size()), full_text)
       view.end_edit(edit)
       view.set_status('is_binary_plist', 'Saving As Binary Property List')
       view.set_scratch(True)
@@ -109,7 +85,5 @@ class BinaryPlistToggleCommand(TextCommand):
         self.to_xml_plist(edit, self.view)
         if not is_syntax_set(self.view):
           self.view.set_syntax_file(SYNTAX_FILE)
-      else:
-        self.to_binary_plist(self.view)
-    else:
-      self.view.set_encoding('UTF-8')
+      else: self.to_binary_plist(self.view)
+    else:   self.view.set_encoding('UTF-8')
