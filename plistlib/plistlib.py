@@ -218,11 +218,43 @@ class Data:
 # XML 'header'
 PLISTHEADER = b"""<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">"""
 
-
-# Regex to find any control chars, except for \t \n and \r
-_controlCharPat = re.compile(
+# U+  E000–  F8FF  6,400 BMP    Apple uses U+F700–F8FF, just in case use the next PUA-A
+# U+ F0000– FFFFF 65,536 SPUA-A
+# Use PUA ending 2 chars as quotes for special chars
+q1='\U000FFFFE' # PUA-A
+q2='\U000FFFFF'
+e_crln = f"{q1}␍{q2}\n" # todo: make user configurable
+e_cr   = f"{q1}␍{q2}"
+e_etx  = f"{q1}␃{q2}"
+_controlCharPat = re.compile( # Regex to find any control chars, except for \x9≝\t \xA≝\n \xD≝\r
     r"[\x00\x01\x02\x03\x04\x05\x06\x07\x08\x0b\x0c\x0e\x0f"
-    r"\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1a\x1b\x1c\x1d\x1e\x1f]")
+     r"\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1a\x1b\x1c\x1d\x1e\x1f]")
+_c_char_rev_pat = re.compile( # Regex to find any control char symbols, except for \t \n \r (not escaped!)
+    r"[␀␁␂␃␄␅␆␇␈␋␌␎␏␐␑␒␓␔␕␖␗␘␙␚␛␜␝␞␟␡]") #␉ ␊ ␍
+_c_char_repl = { # Dictionary to replace those control chars to preserve them on save
+  '\x00':f'{q1}␀{q2}',
+  '\x01':f'{q1}␁{q2}','\x02':f'{q1}␂{q2}','\x03':f'{q1}␃{q2}','\x04':f'{q1}␄{q2}','\x05':f'{q1}␅{q2}',
+  '\x06':f'{q1}␆{q2}','\x07':f'{q1}␇{q2}','\x08':f'{q1}␈{q2}','\x09':f'{q1}␉{q2}',
+  '\x0a':f'{q1}␊{q2}','\x0b':f'{q1}␋{q2}','\x0c':f'{q1}␌{q2}','\x0d':f'{q1}␍{q2}','\x0e':f'{q1}␎{q2}',
+  '\x0f':f'{q1}␏{q2}',
+  '\x10':f'{q1}␐{q2}',
+  '\x11':f'{q1}␑{q2}','\x12':f'{q1}␒{q2}','\x13':f'{q1}␓{q2}','\x14':f'{q1}␔{q2}','\x15':f'{q1}␕{q2}',
+  '\x16':f'{q1}␖{q2}','\x17':f'{q1}␗{q2}','\x18':f'{q1}␘{q2}','\x19':f'{q1}␙{q2}',
+  '\x1a':f'{q1}␚{q2}','\x1b':f'{q1}␛{q2}','\x1c':f'{q1}␜{q2}','\x1d':f'{q1}␝{q2}','\x1e':f'{q1}␞{q2}',
+  '\x1f':f'{q1}␟{q2}','\x7f':f'{q1}␡{q2}',
+  }
+_c_char_rev = { # …Reverse
+  f'{q1}␀{q2}':'\x00',
+  f'{q1}␁{q2}':'\x01',f'{q1}␂{q2}':'\x02',f'{q1}␃{q2}':'\x03',f'{q1}␄{q2}':'\x04',f'{q1}␅{q2}':'\x05',
+  f'{q1}␆{q2}':'\x06',f'{q1}␇{q2}':'\x07',f'{q1}␈{q2}':'\x08',f'{q1}␉{q2}':'\x09',
+  f'{q1}␊{q2}':'\x0a',f'{q1}␋{q2}':'\x0b',f'{q1}␌{q2}':'\x0c',f'{q1}␍{q2}':'\x0d',f'{q1}␎{q2}':'\x0e',
+  f'{q1}␏{q2}':'\x0f',
+  f'{q1}␐{q2}':'\x10',
+  f'{q1}␑{q2}':'\x11',f'{q1}␒{q2}':'\x12',f'{q1}␓{q2}':'\x13',f'{q1}␔{q2}':'\x14',f'{q1}␕{q2}':'\x15',
+  f'{q1}␖{q2}':'\x16',f'{q1}␗{q2}':'\x17',f'{q1}␘{q2}':'\x18',f'{q1}␙{q2}':'\x19',
+  f'{q1}␚{q2}':'\x1a',f'{q1}␛{q2}':'\x1b',f'{q1}␜{q2}':'\x1c',f'{q1}␝{q2}':'\x1d',f'{q1}␞{q2}':'\x1e',
+  f'{q1}␟{q2}':'\x1f',f'{q1}␡{q2}':'\x7f',
+  }
 
 def _encode_base64(s, maxlinelength=76):
     # copied from base64.encodebytes(), with added maxlinelength argument
@@ -258,16 +290,31 @@ def _date_to_string(d):
         d.hour, d.minute, d.second
     )
 
-# q9='\uF8FE'
-# q0='\uF8FF'
 def _escape(text):
-    # U+  E000–  F8FF  6,400 BMP, Apple uses U+F700–F8FF. Use PUA ending 2 chars as quotes for special chars
-    text = _controlCharPat.sub("�", text)
-    text = text.replace("\r\n","\uF8FE␍\uF8FF\n")      # convert DOS line endings
-    text = text.replace("\r"  ,"\uF8FE␍\uF8FF")       # convert Mac line endings
-    text = text.replace("&"   ,"&amp;")    # escape '&'
-    text = text.replace("<"   ,"&lt;")     # escape '<'
-    text = text.replace(">"   ,"&gt;")     # escape '>'
+    # text = _controlCharPat.sub("�", text)
+    if _controlCharPat.search(text):
+      for  hex,esc in _c_char_repl.items(): #\x07 :  ‹␇›  (escape-quoted)
+        if hex in text:
+          text = text.replace(hex,esc)
+          # print(f"READ: repl {hex}→{esc} in |{text}|")
+    # if "\r\n" in text: print(f"READ: replacing ␍␤ e_crln |{text}|")
+    # if "\r"   in text: print(f"READ: replacing ␍  e_cr   |{text}|")
+    text = text.replace("\r\n",e_crln ) # escape DOS line endings
+    text = text.replace("\r"  ,e_cr   ) # escape Mac line endings
+    text = text.replace("&"   ,"&amp;") # escape '&'
+    text = text.replace("<"   ,"&lt;" ) # escape '<'
+    text = text.replace(">"   ,"&gt;" ) # escape '>'
+    return text
+def _un_escape(text):
+    if _c_char_rev_pat.search(text):
+      for  esc,hex in _c_char_rev.items(): #‹␇›  (escape-quoted) : \x07
+        if esc in text:
+          text = text.replace(esc,hex)
+          # print(f"WRITE: repl {esc}→{hex} in |{text}|")
+    # if e_crln in text: print("WRITE: replacing ␍␤ e_crln")
+    # if e_cr   in text: print("WRITE: replacing ␍  e_cr"  )
+    text = text.replace(e_crln,"\r\n")
+    text = text.replace(e_cr  ,"\r"  )
     return text
 
 class _PlistParser:
@@ -754,6 +801,7 @@ class _BinaryPlistWriter (object):
         elif isinstance(value,Data              ): self._write_size(0x40,len(value.data)) ;self._fp.write(value.data)
         elif isinstance(value,(bytes,bytearray) ): self._write_size(0x40,len(value     )) ;self._fp.write(value     )
         elif isinstance(value,str):
+            value = _un_escape(value)
             try:
                 t = value.encode('ascii')
                 self._write_size(0x50, len(value))
