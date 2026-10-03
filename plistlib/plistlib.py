@@ -277,7 +277,7 @@ _dateParser = re.compile(r"(?P<year>\d\d\d\d)(?:-(?P<month>\d\d)(?:-(?P<day>\d\d
 
 
 def _date_from_string(s):
-    order = ('year', 'month', 'day', 'hour', 'minute', 'second')
+    order = ('year','month','day','hour','minute','second')
     gd = _dateParser.match(s).groupdict()
     lst = []
     for key in order:
@@ -296,11 +296,11 @@ def _date_to_string(d):
 
 def _escape(text):
     text = _controlCharPat.sub("�", text)
-    text = text.replace("\r\n", "\n")       # convert DOS line endings
-    text = text.replace("\r", "\n")         # convert Mac line endings
-    text = text.replace("&", "&amp;")       # escape '&'
-    text = text.replace("<", "&lt;")        # escape '<'
-    text = text.replace(">", "&gt;")        # escape '>'
+    text = text.replace("\r\n","\n")       # convert DOS line endings
+    text = text.replace("\r"  ,"\n")       # convert Mac line endings
+    text = text.replace("&"   ,"&amp;")    # escape '&'
+    text = text.replace("<"   ,"&lt;")     # escape '<'
+    text = text.replace(">"   ,"&gt;")     # escape '>'
     return text
 
 class _PlistParser:
@@ -377,32 +377,23 @@ class _PlistParser:
         a = []
         self.add_object(a)
         self.stack.append(a)
-
     def end_array(self):
         self.stack.pop()
-
     def end_true(self):
         self.add_object(True)
-
     def end_false(self):
         self.add_object(False)
-
     def end_integer(self):
         self.add_object(int(self.get_data()))
-
     def end_real(self):
         self.add_object(float(self.get_data()))
-
     def end_string(self):
         self.add_object(self.get_data())
-
     def end_data(self):
         if self._use_builtin_types:
             self.add_object(_decode_base64(self.get_data()))
-
         else:
             self.add_object(Data.fromBase64(self.get_data()))
-
     def end_date(self):
         self.add_object(_date_from_string(self.get_data()))
 
@@ -462,41 +453,20 @@ class _PlistWriter(_DumbXMLWriter):
         self.writeln("</plist>")
 
     def write_value(self, value):
-        if isinstance(value, str):
-            self.simple_element("string", value)
-
-        elif value is True:
-            self.simple_element("true")
-
-        elif value is False:
-            self.simple_element("false")
-
-        elif isinstance(value, int):
-            if -1 << 63 <= value < 1 << 64:
-                self.simple_element("integer", "%d" % value)
-            else:
-                raise OverflowError(value)
-
-        elif isinstance(value, float):
-            self.simple_element("real", repr(value))
-
-        elif isinstance(value, dict):
-            self.write_dict(value)
-
-        elif isinstance(value, Data):
-            self.write_data(value)
-
-        elif isinstance(value, (bytes, bytearray)):
-            self.write_bytes(value)
-
-        elif isinstance(value, datetime.datetime):
-            self.simple_element("date", _date_to_string(value))
-
-        elif isinstance(value, (tuple, list)):
-            self.write_array(value)
-
-        else:
-            raise TypeError("unsupported type: %s" % type(value))
+        if isinstance(value,str                 ): self.simple_element("string", value)
+        elif value is True                       : self.simple_element("true")
+        elif value is False                      : self.simple_element("false")
+        elif isinstance(value,int               ):
+            if -1 << 63 <= value                \
+              < 1 << 64                          : self.simple_element("integer", "%d" % value)
+            else                                 : raise OverflowError(value)
+        elif isinstance(value,float             ): self.simple_element("real", repr(value))
+        elif isinstance(value,dict              ): self.write_dict (value)
+        elif isinstance(value,Data              ): self.write_data (value)
+        elif isinstance(value,(bytes,bytearray) ): self.write_bytes(value)
+        elif isinstance(value,datetime.datetime ): self.simple_element("date", _date_to_string(value))
+        elif isinstance(value,(tuple,list)      ): self.write_array(value)
+        else                                     : raise TypeError("unsupported type: %s" % type(value))
 
     def write_data(self, data):
         self.write_bytes(data.data)
@@ -517,20 +487,15 @@ class _PlistWriter(_DumbXMLWriter):
     def write_dict(self, d):
         if d:
             self.begin_element("dict")
-            if self._sort_keys:
-                items = sorted(d.items())
-            else:
-                items = d.items()
-
+            if self._sort_keys  : items = sorted(d.items())
+            else                : items = d.items()
             for key, value in items:
                 if not isinstance(key, str):
-                    if self._skipkeys:
-                        continue
+                    if self._skipkeys: continue
                     raise TypeError("keys must be strings")
                 self.simple_element("key", key)
                 self.write_value(value)
             self.end_element("dict")
-
         else:
             self.simple_element("dict")
 
@@ -737,17 +702,10 @@ class _BinaryPlistParser:
         return result
 
 def _count_to_size(count):
-    if count < 1 << 8:
-        return 1
-
-    elif count < 1 << 16:
-        return 2
-
-    elif count << 1 << 32:
-        return 4
-
-    else:
-        return 8
+    if   count  < 1 <<  8: return 1
+    elif count  < 1 << 16: return 2
+    elif count << 1 << 32: return 4
+    else:                  return 8
 
 _scalars = (str, int, float, datetime.datetime, bytes)
 
@@ -859,67 +817,42 @@ class _BinaryPlistWriter (object):
             return self._objidtable[id(value)]
 
     def _write_size(self, token, size):
-        if size < 15:
-            self._fp.write(struct.pack('>B', token | size))
-
-        elif size < 1 << 8:
-            self._fp.write(struct.pack('>BBB', token | 0xF, 0x10, size))
-
-        elif size < 1 << 16:
-            self._fp.write(struct.pack('>BBH', token | 0xF, 0x11, size))
-
-        elif size < 1 << 32:
-            self._fp.write(struct.pack('>BBL', token | 0xF, 0x12, size))
-
-        else:
-            self._fp.write(struct.pack('>BBQ', token | 0xF, 0x13, size))
+        if   size < 15     : self._fp.write(struct.pack('>B'  , token |            size))
+        elif size < 1 <<  8: self._fp.write(struct.pack('>BBB', token | 0xF, 0x10, size))
+        elif size < 1 << 16: self._fp.write(struct.pack('>BBH', token | 0xF, 0x11, size))
+        elif size < 1 << 32: self._fp.write(struct.pack('>BBL', token | 0xF, 0x12, size))
+        else:                self._fp.write(struct.pack('>BBQ', token | 0xF, 0x13, size))
 
     def _write_object(self, value):
         ref = self._getrefnum(value)
         self._object_offsets[ref] = self._fp.tell()
-        if value is None:
-            self._fp.write(b'\x00')
-
-        elif value is False:
-            self._fp.write(b'\x08')
-
-        elif value is True:
-            self._fp.write(b'\x09')
-
+        if   value is None : self._fp.write(b'\x00')
+        elif value is False: self._fp.write(b'\x08')
+        elif value is True : self._fp.write(b'\x09')
         elif isinstance(value, int):
             if value < 0:
                 try:
                     self._fp.write(struct.pack('>Bq', 0x13, value))
                 except struct.error:
                     raise OverflowError(value) from None
-            elif value < 1 << 8:
-                self._fp.write(struct.pack('>BB', 0x10, value))
-            elif value < 1 << 16:
-                self._fp.write(struct.pack('>BH', 0x11, value))
-            elif value < 1 << 32:
-                self._fp.write(struct.pack('>BL', 0x12, value))
-            elif value < 1 << 63:
-                self._fp.write(struct.pack('>BQ', 0x13, value))
-            elif value < 1 << 64:
-                self._fp.write(b'\x14' + value.to_bytes(16, 'big', signed=True))
-            else:
-                raise OverflowError(value)
+            elif value < 1 <<  8: self._fp.write(struct.pack('>BB', 0x10, value))
+            elif value < 1 << 16: self._fp.write(struct.pack('>BH', 0x11, value))
+            elif value < 1 << 32: self._fp.write(struct.pack('>BL', 0x12, value))
+            elif value < 1 << 63: self._fp.write(struct.pack('>BQ', 0x13, value))
+            elif value < 1 << 64: self._fp.write(b'\x14' + value.to_bytes(16, 'big', signed=True))
+            else: raise OverflowError(value)
 
         elif isinstance(value, float):
             self._fp.write(struct.pack('>Bd', 0x23, value))
-
         elif isinstance(value, datetime.datetime):
             f = (value - datetime.datetime(2001, 1, 1)).total_seconds()
             self._fp.write(struct.pack('>Bd', 0x33, f))
-
         elif isinstance(value, Data):
             self._write_size(0x40, len(value.data))
             self._fp.write(value.data)
-
         elif isinstance(value, (bytes, bytearray)):
             self._write_size(0x40, len(value))
             self._fp.write(value)
-
         elif isinstance(value, str):
             try:
                 t = value.encode('ascii')
