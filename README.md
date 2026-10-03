@@ -46,3 +46,6 @@ believe this plugin improves on that one in a few key ways:
 [3]: https://www.sublimetext.com
 [4]: https://packagecontrol.io/
 [5]: https://github.com/relikd/Plist-Binary_sublime
+
+#### Fork extras
+  - denser layout, removes newlines between `key`s and `value`s
