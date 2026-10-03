@@ -55,6 +55,7 @@ import binascii
 import codecs
 import contextlib
 import datetime
+from datetime import datetime as dt
 from io import BytesIO
 import itertools
 import os
@@ -267,9 +268,7 @@ def _decode_base64(s):
     else:
         return binascii.a2b_base64(s)
 
-# Contents should conform to a subset of ISO 8601
-# (in particular, YYYY '-' MM '-' DD 'T' HH ':' MM ':' SS 'Z'.  Smaller units
-# may be omitted with #  a loss of precision)
+# Contents should conform to a subset of ISO 8601 (in particular, YYYY '-' MM '-' DD 'T' HH ':' MM ':' SS 'Z'. Smaller units may be omitted with a loss of precision)
 _dateParser = re.compile(r"(?P<year>\d\d\d\d)(?:-(?P<month>\d\d)(?:-(?P<day>\d\d)(?:T(?P<hour>\d\d)(?::(?P<minute>\d\d)(?::(?P<second>\d\d))?)?)?)?)?Z", re.ASCII)
 
 
@@ -282,7 +281,7 @@ def _date_from_string(s):
         if val is None:
             break
         lst.append(int(val))
-    return datetime.datetime(*lst)
+    return dt(*lst)
 
 
 def _date_to_string(d):
@@ -291,10 +290,13 @@ def _date_to_string(d):
         d.hour, d.minute, d.second
     )
 
+# q9='\uF8FE'
+# q0='\uF8FF'
 def _escape(text):
+    # U+  E000–  F8FF  6,400 BMP, Apple uses U+F700–F8FF. Use PUA ending 2 chars as quotes for special chars
     text = _controlCharPat.sub("�", text)
-    text = text.replace("\r\n","\n")       # convert DOS line endings
-    text = text.replace("\r"  ,"\n")       # convert Mac line endings
+    text = text.replace("\r\n","\uF8FE␍\uF8FF\n")      # convert DOS line endings
+    text = text.replace("\r"  ,"\uF8FE␍\uF8FF")       # convert Mac line endings
     text = text.replace("&"   ,"&amp;")    # escape '&'
     text = text.replace("<"   ,"&lt;")     # escape '<'
     text = text.replace(">"   ,"&gt;")     # escape '>'
@@ -429,6 +431,7 @@ class _DumbXMLWriter:
       self.writeln(  line, nl)
 
 
+
 class _PlistWriter(_DumbXMLWriter):
     def __init__(
             self, file, indent_level=0, indent=b"  ", writeHeader=1,
@@ -457,7 +460,7 @@ class _PlistWriter(_DumbXMLWriter):
         elif isinstance(value,dict              ): self.write_dict (value)
         elif isinstance(value,Data              ): self.write_data (value)
         elif isinstance(value,(bytes,bytearray) ): self.write_bytes(value)
-        elif isinstance(value,datetime.datetime ): self.simple_element("date", _date_to_string(value))
+        elif isinstance(value,dt                ): self.simple_element("date", _date_to_string(value))
         elif isinstance(value,(tuple,list)      ): self.write_array(value)
         else                                     : raise TypeError("unsupported type: %s" % type(value))
 
@@ -539,7 +542,7 @@ class InvalidFileException (ValueError):
     def __init__(self, message="Invalid file"):
         ValueError.__init__(self, message)
 
-_BINARY_FORMAT = {1: 'B', 2: 'H', 4: 'L', 8: 'Q'}
+_BINARY_FORMAT = {1:'B',2:'H',4:'L',8:'Q'}
 
 _undefined = object()
 
@@ -613,76 +616,45 @@ class _BinaryPlistParser:
         offset = self._object_offsets[ref]
         self._fp.seek(offset)
         token = self._fp.read(1)[0]
-        tokenH, tokenL = token & 0xF0, token & 0x0F
+        tokenH, tokenL = token & 0xF0, token & 0x0F # ð
 
-        if token == 0x00:
-            result = None
-
-        elif token == 0x08:
-            result = False
-
-        elif token == 0x09:
-            result = True
-
-        # The referenced source code also mentions URL (0x0c, 0x0d) and
-        # UUID (0x0e), but neither can be generated using the Cocoa libraries.
-
-        elif token == 0x0f:
-            result = b''
-
-        elif tokenH == 0x10:  # int
-            result = int.from_bytes(self._fp.read(1 << tokenL),
-                                    'big', signed=tokenL >= 3)
-
-        elif token == 0x22: # real
-            result = struct.unpack('>f', self._fp.read(4))[0]
-
-        elif token == 0x23: # real
-            result = struct.unpack('>d', self._fp.read(8))[0]
-
-        elif token == 0x33:  # date
+        if   token  == 0x00: result = None  # ␀
+        elif token  == 0x08: result = False # ␈
+        elif token  == 0x09: result = True  # ⭾
+        # Referenced source code also mentions URL (0x0c, 0x0d) and UUID (0x0e), but neither can be generated using the Cocoa libraries
+        elif token  == 0x0f: result = b''   # ␏ Shift In
+        elif tokenH == 0x10: result = int.from_bytes(self._fp.read(1 << tokenL), 'big', signed=tokenL >= 3)  # int  ␐DataLinkEscape
+        elif token  == 0x22: result = struct.unpack('>f', self._fp.read(4))[0] # real  "
+        elif token  == 0x23: result = struct.unpack('>d', self._fp.read(8))[0] # real  #
+        elif token  == 0x33:  # date
             f = struct.unpack('>d', self._fp.read(8))[0]
-            # timestamp 0 of binary plists corresponds to 1/1/2001
-            # (year of Mac OS X 10.0), instead of 1/1/1970.
-            result = datetime.datetime.utcfromtimestamp(f + (31 * 365 + 8) * 86400)
-
+            # timestamp 0 of binary plists corresponds to 1/1/2001 (year of Mac OS X 10.0), instead of 1/1/1970.
+            result = dt.utcfromtimestamp(f + (31 * 365 + 8) * 86400)
         elif tokenH == 0x40:  # data
             s = self._get_size(tokenL)
-            if self._use_builtin_types:
-                result = self._fp.read(s)
-            else:
-                result = Data(self._fp.read(s))
-
+            if self._use_builtin_types: result =      self._fp.read(s)
+            else                      : result = Data(self._fp.read(s))
         elif tokenH == 0x50:  # ascii string
             s = self._get_size(tokenL)
             result =  self._fp.read(s).decode('ascii')
             result = result
-
         elif tokenH == 0x60:  # unicode string
             s = self._get_size(tokenL)
             result = self._fp.read(s * 2).decode('utf-16be')
-
-        # tokenH == 0x80 is documented as 'UID' and appears to be used for
-        # keyed-archiving, not in plists.
-
+        # tokenH == 0x80 is documented as 'UID' and appears to be used for keyed-archiving, not in plists.
         elif tokenH == 0xA0:  # array
             s = self._get_size(tokenL)
             obj_refs = self._read_refs(s)
             result = []
             self._objects[ref] = result
             result.extend(self._read_object(x) for x in obj_refs)
-
-        # tokenH == 0xB0 is documented as 'ordset', but is not actually
-        # implemented in the Apple reference code.
-
-        # tokenH == 0xC0 is documented as 'set', but sets cannot be used in
-        # plists.
-
+        # tokenH == 0xB0 is documented as 'ordset', but is not actually implemented in the Apple reference code.
+        # tokenH == 0xC0 is documented as 'set', but sets cannot be used in plists
         elif tokenH == 0xD0:  # dict
             s = self._get_size(tokenL)
             key_refs = self._read_refs(s)
             obj_refs = self._read_refs(s)
-            result = self._dict_type()
+            result  = self._dict_type()
             self._objects[ref] = result
             for k, o in zip(key_refs, obj_refs):
                 result[self._read_object(k)] = self._read_object(o)
@@ -699,7 +671,7 @@ def _count_to_size(count):
     elif count << 1 << 32: return 4
     else:                  return 8
 
-_scalars = (str, int, float, datetime.datetime, bytes)
+_scalars = (str, int, float, dt, bytes)
 
 class _BinaryPlistWriter (object):
     def __init__(self, fp, sort_keys, skipkeys):
@@ -809,18 +781,18 @@ class _BinaryPlistWriter (object):
             return self._objidtable[id(value)]
 
     def _write_size(self, token, size):
-        if   size < 15     : self._fp.write(struct.pack('>B'  , token |            size))
-        elif size < 1 <<  8: self._fp.write(struct.pack('>BBB', token | 0xF, 0x10, size))
-        elif size < 1 << 16: self._fp.write(struct.pack('>BBH', token | 0xF, 0x11, size))
-        elif size < 1 << 32: self._fp.write(struct.pack('>BBL', token | 0xF, 0x12, size))
-        else:                self._fp.write(struct.pack('>BBQ', token | 0xF, 0x13, size))
+        if   size < 15   : self._fp.write(struct.pack('>B'  , token |            size))
+        elif size < 1<< 8: self._fp.write(struct.pack('>BBB', token | 0xF, 0x10, size))
+        elif size < 1<<16: self._fp.write(struct.pack('>BBH', token | 0xF, 0x11, size))
+        elif size < 1<<32: self._fp.write(struct.pack('>BBL', token | 0xF, 0x12, size))
+        else:              self._fp.write(struct.pack('>BBQ', token | 0xF, 0x13, size))
 
     def _write_object(self, value):
         ref = self._getrefnum(value)
         self._object_offsets[ref] = self._fp.tell()
-        if   value is None : self._fp.write(b'\x00')
-        elif value is False: self._fp.write(b'\x08')
-        elif value is True : self._fp.write(b'\x09')
+        if   value is None : self._fp.write(b'\x00') # ␀
+        elif value is False: self._fp.write(b'\x08') # ␈
+        elif value is True : self._fp.write(b'\x09') # ⭾
         elif isinstance(value, int):
             if value < 0:
                 try:
@@ -831,28 +803,20 @@ class _BinaryPlistWriter (object):
             elif value < 1 << 16: self._fp.write(struct.pack('>BH', 0x11, value))
             elif value < 1 << 32: self._fp.write(struct.pack('>BL', 0x12, value))
             elif value < 1 << 63: self._fp.write(struct.pack('>BQ', 0x13, value))
-            elif value < 1 << 64: self._fp.write(b'\x14' + value.to_bytes(16, 'big', signed=True))
+            elif value < 1 << 64: self._fp.write(b'\x14' + value.to_bytes(16,'big',signed=True)) # ␔
             else: raise OverflowError(value)
 
-        elif isinstance(value, float):
-            self._fp.write(struct.pack('>Bd', 0x23, value))
-        elif isinstance(value, datetime.datetime):
-            f = (value - datetime.datetime(2001, 1, 1)).total_seconds()
-            self._fp.write(struct.pack('>Bd', 0x33, f))
-        elif isinstance(value, Data):
-            self._write_size(0x40, len(value.data))
-            self._fp.write(value.data)
-        elif isinstance(value, (bytes, bytearray)):
-            self._write_size(0x40, len(value))
-            self._fp.write(value)
-        elif isinstance(value, str):
+        elif isinstance(value,float             ):                                         self._fp.write(struct.pack('>Bd',0x23,value))
+        elif isinstance(value,dt                ):f=(value - dt(2001,1,1)).total_seconds();self._fp.write(struct.pack('>Bd',0x33,f    ))
+        elif isinstance(value,Data              ): self._write_size(0x40,len(value.data)) ;self._fp.write(value.data)
+        elif isinstance(value,(bytes,bytearray) ): self._write_size(0x40,len(value     )) ;self._fp.write(value     )
+        elif isinstance(value,str):
             try:
                 t = value.encode('ascii')
                 self._write_size(0x50, len(value))
             except UnicodeEncodeError:
                 t = value.encode('utf-16be')
                 self._write_size(0x60, len(value))
-
             self._fp.write(t)
 
         elif isinstance(value, (list, tuple)):
@@ -864,15 +828,12 @@ class _BinaryPlistWriter (object):
         elif isinstance(value, dict):
             keyRefs, valRefs = [], []
 
-            if self._sort_keys:
-                rootItems = sorted(value.items())
-            else:
-                rootItems = value.items()
+            if self._sort_keys: rootItems = sorted(value.items())
+            else              : rootItems =        value.items()
 
             for k, v in rootItems:
                 if not isinstance(k, str):
-                    if self._skipkeys:
-                        continue
+                    if self._skipkeys: continue
                     raise TypeError("keys must be strings")
                 keyRefs.append(self._getrefnum(k))
                 valRefs.append(self._getrefnum(v))
