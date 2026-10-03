@@ -472,8 +472,7 @@ class _PlistWriter(_DumbXMLWriter):
             76 - len(self.indent.replace(b"\t", b" " * 8) * self._indent_level))
 
         for line in _encode_base64(data, maxlinelength).split(b"\n"):
-            if line:
-                self.writeln(line)
+            if line: self.writeln(line)
         self._indent_level += 1
         self.end_element("data")
 
