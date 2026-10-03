@@ -75,24 +75,18 @@ FMT_BINARY = 'FMT_BINARY'
 
 
 class _InternalDict(dict):
-
-    # This class is needed while Dict is scheduled for deprecation:
-    # we only need to warn when a *user* instantiates Dict or when
-    # the "attribute notation for dict keys" is used.
+    # This class is needed while Dict is scheduled for deprecation: we only need to warn when a *user* instantiates Dict or when the "attribute notation for dict keys" is used.
     __slots__ = ()
-
     def __getattr__(self, attr):
         try:
             value = self[attr]
         except KeyError:
             raise AttributeError(attr)
-        warn("Attribute access from plist dicts is deprecated, use d[key] "
-             "notation instead", DeprecationWarning, 2)
+        warn("Attribute access from plist dicts is deprecated, use d[key] notation instead", DeprecationWarning, 2)
         return value
 
     def __setattr__(self, attr, value):
-        warn("Attribute access from plist dicts is deprecated, use d[key] "
-             "notation instead", DeprecationWarning, 2)
+        warn("Attribute access from plist dicts is deprecated, use d[key] notation instead", DeprecationWarning, 2)
         self[attr] = value
 
     def __delattr__(self, attr):
@@ -100,15 +94,12 @@ class _InternalDict(dict):
             del self[attr]
         except KeyError:
             raise AttributeError(attr)
-        warn("Attribute access from plist dicts is deprecated, use d[key] "
-             "notation instead", DeprecationWarning, 2)
+        warn("Attribute access from plist dicts is deprecated, use d[key] notation instead", DeprecationWarning, 2)
 
 
 class Dict(_InternalDict):
-
     def __init__(self, **kwargs):
-        warn("The plistlib.Dict class is deprecated, use builtin dict instead",
-             DeprecationWarning, 2)
+        warn("The plistlib.Dict class is deprecated, use builtin dict instead", DeprecationWarning, 2)
         super().__init__(**kwargs)
 
 
@@ -117,7 +108,6 @@ def _maybe_open(pathOrFile, mode):
     if isinstance(pathOrFile, str):
         with open(pathOrFile, mode) as fp:
             yield fp
-
     else:
         yield pathOrFile
 
@@ -126,10 +116,8 @@ class Plist(_InternalDict):
     """This class has been deprecated. Use dump() and load()
     functions instead, together with regular dict objects.
     """
-
     def __init__(self, **kwargs):
-        warn("The Plist class is deprecated, use the load() and "
-             "dump() functions instead", DeprecationWarning, 2)
+        warn("The Plist class is deprecated, use the load() and dump() functions instead", DeprecationWarning, 2)
         super().__init__(**kwargs)
 
     @classmethod
@@ -154,8 +142,7 @@ def readPlist(pathOrFile):
 
     This function is deprecated, use load instead.
     """
-    warn("The readPlist function is deprecated, use load() instead",
-        DeprecationWarning, 2)
+    warn("The readPlist function is deprecated, use load() instead", DeprecationWarning, 2)
 
     with _maybe_open(pathOrFile, 'rb') as fp:
         return load(fp, fmt=None, use_builtin_types=False,
@@ -168,8 +155,7 @@ def writePlist(value, pathOrFile):
 
     This function is deprecated, use dump instead.
     """
-    warn("The writePlist function is deprecated, use dump() instead",
-        DeprecationWarning, 2)
+    warn("The writePlist function is deprecated, use dump() instead", DeprecationWarning, 2)
     with _maybe_open(pathOrFile, 'wb') as fp:
         dump(value, fp, fmt=FMT_XML, sort_keys=True, skipkeys=False)
 
@@ -180,10 +166,8 @@ def readPlistFromBytes(data):
 
     This function is deprecated, use loads instead.
     """
-    warn("The readPlistFromBytes function is deprecated, use loads() instead",
-        DeprecationWarning, 2)
-    return load(BytesIO(data), fmt=None, use_builtin_types=False,
-        dict_type=_InternalDict)
+    warn("The readPlistFromBytes function is deprecated, use loads() instead", DeprecationWarning, 2)
+    return load(BytesIO(data), fmt=None, use_builtin_types=False, dict_type=_InternalDict)
 
 
 def writePlistToBytes(value):
@@ -192,8 +176,7 @@ def writePlistToBytes(value):
 
     This function is deprecated, use dumps instead.
     """
-    warn("The writePlistToBytes function is deprecated, use dumps() instead",
-        DeprecationWarning, 2)
+    warn("The writePlistToBytes function is deprecated, use dumps() instead", DeprecationWarning, 2)
     f = BytesIO()
     dump(value, f, fmt=FMT_XML, sort_keys=True, skipkeys=False)
     return f.getvalue()
@@ -205,29 +188,18 @@ class Data:
 
     This class is deprecated, use a bytes object instead.
     """
-
     def __init__(self, data):
-        if not isinstance(data, bytes):
-            raise TypeError("data must be as bytes")
+        if not isinstance(data, bytes): raise TypeError("data must be as bytes")
         self.data = data
-
     @classmethod
-    def fromBase64(cls, data):
-        # base64.decodebytes just calls binascii.a2b_base64;
-        # it seems overkill to use both base64 and binascii.
+    def fromBase64(cls, data): # base64.decodebytes just calls binascii.a2b_base64; it seems overkill to use both base64 and binascii
         return cls(_decode_base64(data))
-
     def asBase64(self, maxlinelength=76):
         return _encode_base64(self.data, maxlinelength)
-
     def __eq__(self, other):
-        if isinstance(other, self.__class__):
-            return self.data == other.data
-        elif isinstance(other, str):
-            return self.data == other
-        else:
-            return id(self) == id(other)
-
+        if   isinstance(other,self.__class__): return    self.data ==    other.data
+        elif isinstance(other,str           ): return    self.data ==    other
+        else                                :  return id(self)     == id(other)
     def __repr__(self):
         return "%s(%s)" % (self.__class__.__name__, repr(self.data))
 
@@ -262,11 +234,8 @@ def _encode_base64(s, maxlinelength=76):
     return b''.join(pieces)
 
 def _decode_base64(s):
-    if isinstance(s, str):
-        return binascii.a2b_base64(s.encode("utf-8"))
-
-    else:
-        return binascii.a2b_base64(s)
+    if isinstance(s, str): return binascii.a2b_base64(s.encode("utf-8"))
+    else                 : return binascii.a2b_base64(s                )
 
 # Contents should conform to a subset of ISO 8601 (in particular, YYYY '-' MM '-' DD 'T' HH ':' MM ':' SS 'Z'. Smaller units may be omitted with a loss of precision)
 _dateParser = re.compile(r"(?P<year>\d\d\d\d)(?:-(?P<month>\d\d)(?:-(?P<day>\d\d)(?:T(?P<hour>\d\d)(?::(?P<minute>\d\d)(?::(?P<second>\d\d))?)?)?)?)?Z", re.ASCII)
@@ -278,8 +247,7 @@ def _date_from_string(s):
     lst = []
     for key in order:
         val = gd[key]
-        if val is None:
-            break
+        if val is None: break
         lst.append(int(val))
     return dt(*lst)
 
@@ -616,7 +584,7 @@ class _BinaryPlistParser:
         offset = self._object_offsets[ref]
         self._fp.seek(offset)
         token = self._fp.read(1)[0]
-        tokenH, tokenL = token & 0xF0, token & 0x0F # ð
+        tokenH, tokenL = token & 0xF0, token & 0x0F # f0≝ð f≝␏
 
         if   token  == 0x00: result = None  # ␀
         elif token  == 0x08: result = False # ␈
@@ -680,33 +648,24 @@ class _BinaryPlistWriter (object):
         self._skipkeys = skipkeys
 
     def write(self, value):
+        self._objlist = [] # Flattened object list
 
-        # Flattened object list:
-        self._objlist = []
-
-        # Mappings from object->objectid
-        # First dict has (type(object), object) as the key,
-        # second dict is used when object is not hashable and
-        # has id(object) as the key.
-        self._objtable = {}
+        # Mappings from object->objectid. First dict has (type(object), object) as the key, second dict is used when object is not hashable and has id(object) as the key.
+        self._objtable   = {}
         self._objidtable = {}
 
-        # Create list of all objects in the plist
-        self._flatten(value)
+        self._flatten(value) # Create list of all objects in the plist
 
-        # Size of object references in serialized containers
-        # depends on the number of objects in the plist.
+        # Size of object references in serialized containers depends on the number of objects in the plist.
         num_objects = len(self._objlist)
         self._object_offsets = [0]*num_objects
         self._ref_size = _count_to_size(num_objects)
 
         self._ref_format = _BINARY_FORMAT[self._ref_size]
 
-        # Write file header
-        self._fp.write(b'bplist00')
+        self._fp.write(b'bplist00') # Write file header
 
-        # Write object list
-        for obj in self._objlist:
+        for obj in self._objlist: # Write object list
             self._write_object(obj)
 
         # Write refnum->object offset table
@@ -724,61 +683,46 @@ class _BinaryPlistWriter (object):
         )
         self._fp.write(struct.pack('>5xBBBQQQ', *trailer))
 
-    def _flatten(self, value):
-        # First check if the object is in the object table, not used for
-        # containers to ensure that two subcontainers with the same contents
-        # will be serialized as distinct values.
-        if isinstance(value, _scalars):
-            if (type(value), value) in self._objtable:
+    def _flatten(self, value): # First check if the object is in the object table, not used for containers to ensure that two subcontainers with the same contents will be serialized as distinct values.
+        if   isinstance(value, _scalars):
+            if (type(value     ), value     ) in self._objtable:
                 return
-
         elif isinstance(value, Data):
             if (type(value.data), value.data) in self._objtable:
                 return
-
-        elif id(value) in self._objidtable:
+        elif         id(value               ) in self._objidtable:
             return
 
         # Add to objectreference map
         refnum = len(self._objlist)
         self._objlist.append(value)
-        if isinstance(value, _scalars):
-            self._objtable[(type(value), value)] = refnum
-        elif isinstance(value, Data):
-            self._objtable[(type(value.data), value.data)] = refnum
-        else:
-            self._objidtable[id(value)] = refnum
+        if   isinstance(value,_scalars): self._objtable  [(type(value     ), value     )] = refnum
+        elif isinstance(value,Data    ): self._objtable  [(type(value.data), value.data)] = refnum
+        else                           : self._objidtable[   id(value     )             ] = refnum
 
-        # And finally recurse into containers
-        if isinstance(value, dict):
-            keys = []
+        if isinstance(value, dict): # And finally recurse into containers
+            keys   = []
             values = []
-            items = value.items()
+            items  = value.items()
             if self._sort_keys:
                 items = sorted(items)
 
             for k, v in items:
                 if not isinstance(k, str):
-                    if self._skipkeys:
-                        continue
+                    if self._skipkeys: continue
                     raise TypeError("keys must be strings")
-                keys.append(k)
+                keys  .append(k)
                 values.append(v)
 
-            for o in itertools.chain(keys, values):
-                self._flatten(o)
+            for o in itertools.chain(keys, values): self._flatten(o)
 
         elif isinstance(value, (list, tuple)):
-            for o in value:
-                self._flatten(o)
+            for o in value                        : self._flatten(o)
 
     def _getrefnum(self, value):
-        if isinstance(value, _scalars):
-            return self._objtable[(type(value), value)]
-        elif isinstance(value, Data):
-            return self._objtable[(type(value.data), value.data)]
-        else:
-            return self._objidtable[id(value)]
+        if   isinstance(value,_scalars): return self._objtable  [(type(value     ), value     )]
+        elif isinstance(value,Data    ): return self._objtable  [(type(value.data), value.data)]
+        else                           : return self._objidtable[   id(value                  )]
 
     def _write_size(self, token, size):
         if   size < 15   : self._fp.write(struct.pack('>B'  , token |            size))
@@ -805,7 +749,6 @@ class _BinaryPlistWriter (object):
             elif value < 1 << 63: self._fp.write(struct.pack('>BQ', 0x13, value))
             elif value < 1 << 64: self._fp.write(b'\x14' + value.to_bytes(16,'big',signed=True)) # ␔
             else: raise OverflowError(value)
-
         elif isinstance(value,float             ):                                         self._fp.write(struct.pack('>Bd',0x23,value))
         elif isinstance(value,dt                ):f=(value - dt(2001,1,1)).total_seconds();self._fp.write(struct.pack('>Bd',0x33,f    ))
         elif isinstance(value,Data              ): self._write_size(0x40,len(value.data)) ;self._fp.write(value.data)
