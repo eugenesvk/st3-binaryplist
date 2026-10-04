@@ -64,6 +64,7 @@ class BinaryPlistToggleCommand(TextCommand):
       pos = cfg.get("pos",None)
       if isinstance(pre,str): ctrld['pre']=pre; cfgv.set('BinaryPlist.pre',pre)
       if isinstance(pos,str): ctrld['pos']=pos; cfgv.set('BinaryPlist.pos',pos)
+      # print(f"to_xml_plist user cfg: pre={pre} pos={pos}, ctrld={ctrld}")
       is_warn = cfg.get("warn_dupe",True)
 
       full_text = plistlib.dumps(pl,ctrld=ctrld).decode('utf-8')
@@ -92,6 +93,7 @@ class BinaryPlistToggleCommand(TextCommand):
           pos = cfgv.get("BinaryPlist.pos",cfg.get("pos",None))
           if isinstance(pre,str): ctrld['pre']=pre
           if isinstance(pos,str): ctrld['pos']=pos
+          # print(f"to_binary_plist view cfg: pre={pre} pos={pos}, ctrld={ctrld}")
           plistlib.dump(pl, fp, fmt=plistlib.FMT_BINARY, ctrld=ctrld)
       except Exception as e:
         sublime.error_message(str(e))
