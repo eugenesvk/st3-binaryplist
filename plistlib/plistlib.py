@@ -126,8 +126,14 @@ def get_esc_comment(q1=str,q2=str):
 <!-- Control chars u0–u1f + u1f (∑30 excluding ␉u9 ␊uA ␍uD) are escape-encoded:
   • by 'quoting' {q1}⎀{q2} in {repr(q1)} and {repr(q2)}
   • their symbolic ⎀ representation: ␀␁␂␃␄␅␆␇␈␋␌␎␏␐␑␒␓␔␕␖␗␘␙␚␛␜␝␞␟ ␡, for example: Backspace  is {q1}␈{q2}
-  ⚠data loss: if the source binary plist used these quoted sequences, they will be reconverted to control chars/lost on save
   ␍ (incl. in ␍␊) is also escape-encoded until Sublime Text fixes its bug of corrupting mixed newlines (upvote github.com/sublimehq/sublime_text/issues/182) -->
+"""
+def get_dupe_comment(q1=str,q2=str):
+    return f"""
+<!-- ⚠data loss: the source document contains the same escaped control chars used to escape actual control chars, for example:
+  • Backspace  is escaped as {q1}␈{q2}, but this escaped form was already present
+  Saving the file will convert {q1}␈{q2} back to Backspace  even if nothing was escaped, leading to a data loss❗
+  Workaround: use alternative escape quotes in plugin settings -->
 """
 
 import threading
@@ -156,6 +162,7 @@ class CFG(metaclass=Singleton):
         self.q1 = q1
         self.q2 = q2
         self.esc_comment = get_esc_comment(q1,q2)
+        self.dupe_comment = get_dupe_comment(q1,q2)
         (self.char_rep,self.char_rev) = self.fill_char_replace(q1,q2)
         self.e_cr = f"{q1}␍{q2}" # (incl. in ␍␊) is also escape-encoded due to Sublime Text corrupting mixed newlines
 
@@ -236,24 +243,24 @@ def _dict_items(d, sort_keys, skipkeys):
     return items
 
 
-def _escape(text, is_ctrl):
+def _escape(text, is_ctrl, is_dupe):
     C = CFG()
     # text = _controlCharPat.sub("�", text)
     if _controlCharPat.search(text):
         if not is_ctrl: is_ctrl = True
-        for  hex,esc in C.char_rep.items(): #\x07 :  ‹␇›  (escape-quoted)
-            if hex in text:
-                # print(f"READ: repl {hex}→{esc} in |{text}|")
-                text = text.replace(hex,esc)
+        for    hex,esc in C.char_rep.items(): #\x07 :  ‹␇›  (escape-quoted)
+            if not is_dupe and esc in text: is_dupe = True
+            if hex in text: text = text.replace(hex,esc)
     # if "\r\n" in text: print(f"READ: replacing ␍␤ e_crln |{text}|")
     # if "\r"   in text: print(f"READ: replacing ␍  e_cr   |{text}|")
     # text = text.replace("\r\n",e_crln ) # escape DOS line endings
+    if not is_dupe and C.e_cr in text: is_dupe = True
     if not is_ctrl and "\r" in text: is_ctrl = True
     text = text.replace("\r"  ,C.e_cr ) # escape Mac line endings
     text = text.replace("&"   ,"&amp;") # escape '&'
     text = text.replace("<"   ,"&lt;" ) # escape '<'
     text = text.replace(">"   ,"&gt;" ) # escape '>'
-    return (text,is_ctrl)
+    return (text,is_ctrl,is_dupe)
 def _un_escape(text):
     C = CFG()
     if _c_char_rev_pat.search(text):
@@ -385,7 +392,8 @@ class _DumbXMLWriter:
         self.stack = []
         self._indent_level = indent_level
         self.indent = indent
-        self.is_ctrl = False
+        self.is_ctrl = False # signal when control chars are found
+        self.is_dupe = False # warn when escaped sequence is already in the text
 
     def begin_element(self, element):
         self.stack.append(element)
@@ -400,8 +408,9 @@ class _DumbXMLWriter:
 
     def simple_element(self, element, value=None, nl=True):
         if value is not None:
-            (value,is_ctrl) = _escape(value,self.is_ctrl)
+            (value,is_ctrl,is_dupe) = _escape(value,self.is_ctrl,self.is_dupe)
             if not self.is_ctrl and is_ctrl: self.is_ctrl = True
+            if not self.is_dupe and is_dupe: self.is_dupe = True
             self.writeln("<%s>%s</%s>" % (element, value, element))
 
         else:
@@ -437,6 +446,7 @@ class _PlistWriter(_DumbXMLWriter):
         self.writeln("<plist version=\"1.0\">")
         self.write_value(value)
         if self.is_ctrl: self.writex(C.esc_comment) # can't add at the top since haven't parsed values yet
+        if self.is_dupe: self.writex(C.dupe_comment)
         self.writex("</plist>")
 
     def write_value(self, value):
