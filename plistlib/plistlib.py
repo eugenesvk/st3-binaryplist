@@ -111,54 +111,69 @@ class UID:
 
 # XML 'header'
 PLISTHEADER = b"""<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">"""
-esc_comment = """
+
+ctrl_esc_sym = { # Dictionary matching control chars to their escape symbols (unquoted)
+    '\x00':'␀',
+    '\x01':'␁','\x02':'␂','\x03':'␃','\x04':'␄','\x05':'␅', '\x06':'␆','\x07':'␇','\x08':'␈','\x09':'␉',
+    '\x0a':'␊','\x0b':'␋','\x0c':'␌','\x0d':'␍','\x0e':'␎', '\x0f':'␏',
+    '\x10':'␐',
+    '\x11':'␑','\x12':'␒','\x13':'␓','\x14':'␔','\x15':'␕', '\x16':'␖','\x17':'␗','\x18':'␘','\x19':'␙',
+    '\x1a':'␚','\x1b':'␛','\x1c':'␜','\x1d':'␝','\x1e':'␞', '\x1f':'␟',
+    '\x7f':'␡', # technically not a control char
+}
+def get_esc_comment(q1=str,q2=str):
+    return f"""
 <!-- Control chars u0–u1f + u1f (∑30 excluding ␉u9 ␊uA ␍uD) are escape-encoded:
-  • by quoting    "⎀" in uFFFFE and uFFFFF (Unicode SPUA-A block)
-  • their symbolic ⎀ representation: ␀␁␂␃␄␅␆␇␈␋␌␎␏␐␑␒␓␔␕␖␗␘␙␚␛␜␝␞␟ ␡, for example: Backspace  is 󿿾␈󿿿
+  • by 'quoting' {q1}⎀{q2} in {repr(q1)} and {repr(q2)}
+  • their symbolic ⎀ representation: ␀␁␂␃␄␅␆␇␈␋␌␎␏␐␑␒␓␔␕␖␗␘␙␚␛␜␝␞␟ ␡, for example: Backspace  is {q1}␈{q2}
   ⚠data loss: if the source binary plist used these quoted sequences, they will be reconverted to control chars/lost on save
   ␍ (incl. in ␍␊) is also escape-encoded until Sublime Text fixes its bug of corrupting mixed newlines (upvote github.com/sublimehq/sublime_text/issues/182) -->
 """
 
-q1='\U000FFFFE' # Use PUA last 2 chars as quotes for special chars
-q2='\U000FFFFF' # TODO: make user configurable
-# U+  E000–  F8FF  6,400 BMP    Apple uses U+F700–F8FF, just in case use the next PUA-A
-# U+ F0000– FFFFF 65,536 SPUA-A
-ctrld_def = {'esc':True, 'pre':q1, 'pos':q2, 'is_ctrl':False}
-e_cr = f"{q1}␍{q2}" # (incl. in ␍␊) is also escape-encoded due to Sublime Text corrupting mixed newlines
+import threading
+class Singleton(type): # doesn't deadlock: if both Class_1 and Class_2 implement old singleton pattern, calling the constructor of Class_1 in Class_2 (or vice versa) would dead-lock since all the classes implemented through that meta-class share the same lock
+    def __new__(mcs, name, bases, attrs): # Assume target class is created (=this method to be called) in the main thread
+        cls = super(Singleton, mcs).__new__(mcs, name, bases, attrs)
+        cls.__shared_instance__ = None
+        cls.__shared_instance_lock__ = threading.Lock() # class implementing primitive lock objects. It allows the thread running our code to be the only thread accessing the code within the lock's context manager (cls._lock block), so long as it holds the lock
+        return cls
+    def __call__(cls, *args, **kwargs):
+        if cls.__shared_instance__ is None: # check twice to avoid the edge case when 2 classes are created (alternative is to wrap it in a lock, but it's expensive):
+            # 1. in this thread                  cls._instance is None
+            # 2. another thread is about to call cls._instance = super(Singleton, cls).__new__(cls)
+            with cls.__shared_instance_lock__: # another thread could have created the instance before we acquired the lock. So check that the instance is still nonexistent
+                if not cls.__shared_instance__:
+                    cls   .__shared_instance__ = super(Singleton, cls).__call__(*args, **kwargs)
+        return cls.__shared_instance__
+
+_q1='\U000FFFFE' # Use PUA last 2 chars as quotes for special chars
+_q2='\U000FFFFF'
+class CFG(metaclass=Singleton):
+    # U+  E000–  F8FF  6,400 BMP    Apple uses U+F700–F8FF, just in case use the next SPUA-A
+    # U+ F0000– FFFFF 65,536 SPUA-A
+
+    def __init__(self, q1=_q1,q2=_q2):
+        self.q1 = q1
+        self.q2 = q2
+        self.esc_comment = get_esc_comment(q1,q2)
+        (self.char_rep,self.char_rev) = self.fill_char_replace(q1,q2)
+        self.e_cr = f"{q1}␍{q2}" # (incl. in ␍␊) is also escape-encoded due to Sublime Text corrupting mixed newlines
+
+    def fill_char_replace(self, q1, q2):
+        c_rep = dict() # Dictionary to replace those control chars to preserve them on save
+        c_rev = dict() # …Reverse
+        for hex,sym in ctrl_esc_sym.items():
+            c_rep[hex             ] = f'{q1}{sym}{q2}'
+            c_rev[f'{q1}{sym}{q2}'] = hex
+        return (c_rep, c_rev)
 
 _controlCharPat = re.compile( # Regex to find any control chars, except for \x9≝\t \xA≝\n \xD≝\r
     r"[\x00\x01\x02\x03\x04\x05\x06\x07\x08\x0b\x0c\x0e\x0f"
      r"\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1a\x1b\x1c\x1d\x1e\x1f\x7f]")
 _c_char_rev_pat = re.compile( # Regex to find any control char symbols, except for \t \n \r (not escaped!)
     r"[␀␁␂␃␄␅␆␇␈␋␌␎␏␐␑␒␓␔␕␖␗␘␙␚␛␜␝␞␟␡]") #␉ ␊ ␍
-_c_char_repl = { # Dictionary to replace those control chars to preserve them on save
-  '\x00':f'{q1}␀{q2}',
-  '\x01':f'{q1}␁{q2}','\x02':f'{q1}␂{q2}','\x03':f'{q1}␃{q2}','\x04':f'{q1}␄{q2}','\x05':f'{q1}␅{q2}',
-  '\x06':f'{q1}␆{q2}','\x07':f'{q1}␇{q2}','\x08':f'{q1}␈{q2}','\x09':f'{q1}␉{q2}',
-  '\x0a':f'{q1}␊{q2}','\x0b':f'{q1}␋{q2}','\x0c':f'{q1}␌{q2}','\x0d':f'{q1}␍{q2}','\x0e':f'{q1}␎{q2}',
-  '\x0f':f'{q1}␏{q2}',
-  '\x10':f'{q1}␐{q2}',
-  '\x11':f'{q1}␑{q2}','\x12':f'{q1}␒{q2}','\x13':f'{q1}␓{q2}','\x14':f'{q1}␔{q2}','\x15':f'{q1}␕{q2}',
-  '\x16':f'{q1}␖{q2}','\x17':f'{q1}␗{q2}','\x18':f'{q1}␘{q2}','\x19':f'{q1}␙{q2}',
-  '\x1a':f'{q1}␚{q2}','\x1b':f'{q1}␛{q2}','\x1c':f'{q1}␜{q2}','\x1d':f'{q1}␝{q2}','\x1e':f'{q1}␞{q2}',
-  '\x1f':f'{q1}␟{q2}',
-  '\x7f':f'{q1}␡{q2}', # technically not a control char
-  }
-_c_char_rev = { # …Reverse
-  f'{q1}␀{q2}':'\x00',
-  f'{q1}␁{q2}':'\x01',f'{q1}␂{q2}':'\x02',f'{q1}␃{q2}':'\x03',f'{q1}␄{q2}':'\x04',f'{q1}␅{q2}':'\x05',
-  f'{q1}␆{q2}':'\x06',f'{q1}␇{q2}':'\x07',f'{q1}␈{q2}':'\x08',f'{q1}␉{q2}':'\x09',
-  f'{q1}␊{q2}':'\x0a',f'{q1}␋{q2}':'\x0b',f'{q1}␌{q2}':'\x0c',f'{q1}␍{q2}':'\x0d',f'{q1}␎{q2}':'\x0e',
-  f'{q1}␏{q2}':'\x0f',
-  f'{q1}␐{q2}':'\x10',
-  f'{q1}␑{q2}':'\x11',f'{q1}␒{q2}':'\x12',f'{q1}␓{q2}':'\x13',f'{q1}␔{q2}':'\x14',f'{q1}␕{q2}':'\x15',
-  f'{q1}␖{q2}':'\x16',f'{q1}␗{q2}':'\x17',f'{q1}␘{q2}':'\x18',f'{q1}␙{q2}':'\x19',
-  f'{q1}␚{q2}':'\x1a',f'{q1}␛{q2}':'\x1b',f'{q1}␜{q2}':'\x1c',f'{q1}␝{q2}':'\x1d',f'{q1}␞{q2}':'\x1e',
-  f'{q1}␟{q2}':'\x1f',
-  f'{q1}␡{q2}':'\x7f',
-  }
 
-def _encode_base64(s, maxlinelength=76):
+def _encode_base64(s, maxlinelength=116):
     # copied from base64.encodebytes(), with added maxlinelength argument
     maxbinsize = (maxlinelength//4)*3
     pieces = []
@@ -222,32 +237,34 @@ def _dict_items(d, sort_keys, skipkeys):
 
 
 def _escape(text, is_ctrl):
+    C = CFG()
     # text = _controlCharPat.sub("�", text)
     if _controlCharPat.search(text):
         if not is_ctrl: is_ctrl = True
-        for  hex,esc in _c_char_repl.items(): #\x07 :  ‹␇›  (escape-quoted)
+        for  hex,esc in C.char_rep.items(): #\x07 :  ‹␇›  (escape-quoted)
             if hex in text:
-                text = text.replace(hex,esc)
                 # print(f"READ: repl {hex}→{esc} in |{text}|")
+                text = text.replace(hex,esc)
     # if "\r\n" in text: print(f"READ: replacing ␍␤ e_crln |{text}|")
     # if "\r"   in text: print(f"READ: replacing ␍  e_cr   |{text}|")
     # text = text.replace("\r\n",e_crln ) # escape DOS line endings
     if not is_ctrl and "\r" in text: is_ctrl = True
-    text = text.replace("\r"  ,e_cr   ) # escape Mac line endings
+    text = text.replace("\r"  ,C.e_cr ) # escape Mac line endings
     text = text.replace("&"   ,"&amp;") # escape '&'
     text = text.replace("<"   ,"&lt;" ) # escape '<'
     text = text.replace(">"   ,"&gt;" ) # escape '>'
     return (text,is_ctrl)
 def _un_escape(text):
+    C = CFG()
     if _c_char_rev_pat.search(text):
-        for  esc,hex in _c_char_rev.items(): #‹␇›  (escape-quoted) : \x07
+        for  esc,hex in C.char_rev.items(): #‹␇›  (escape-quoted) : \x07
             if esc in text:
                 text = text.replace(esc,hex)
                 # print(f"WRITE: repl {esc}→{hex} in |{text}|")
     # if e_crln in text: print("WRITE: replacing ␍␤ e_crln")
     # if e_cr   in text: print("WRITE: replacing ␍  e_cr"  )
     # text = text.replace(e_crln,"\r\n")
-    text = text.replace(e_cr  ,"\r"  )
+    text = text.replace(C.e_cr  ,"\r"  )
     return text
 
 class _PlistParser:
@@ -416,9 +433,10 @@ class _PlistWriter(_DumbXMLWriter):
         self._aware_datetime = aware_datetime
 
     def write(self, value):
+        C = CFG()
         self.writeln("<plist version=\"1.0\">")
         self.write_value(value)
-        if self.is_ctrl: self.writex(esc_comment) # can't add at the top since haven't parsed values yet
+        if self.is_ctrl: self.writex(C.esc_comment) # can't add at the top since haven't parsed values yet
         self.writex("</plist>")
 
     def write_value(self, value):
@@ -993,7 +1011,7 @@ def loads(value, *, fmt=None, dict_type=dict, aware_datetime=False):
 
 
 def dump(value, fp, *, fmt=FMT_XML, sort_keys=True, skipkeys=False,
-         aware_datetime=False, ctrld=ctrld_def):
+         aware_datetime=False, ctrld={}):
     """Write 'value' to a .plist file. 'fp' should be a writable,
     binary file object.
     """
@@ -1002,12 +1020,17 @@ def dump(value, fp, *, fmt=FMT_XML, sort_keys=True, skipkeys=False,
 
     writer = _FORMATS[fmt]["writer"](fp, sort_keys=sort_keys, skipkeys=skipkeys,
                                      aware_datetime=aware_datetime)
+    if ctrld and      ('pre' in ctrld \
+        or             'pos' in ctrld):
+        q1 = ctrld.get('pre',CFG.q1)
+        q2 = ctrld.get('pos',CFG.q2)
+        C = CFG(q1, q2)
     writer.write(value)
-    ctrld['is_ctrl'] = hasattr(writer,'is_ctrl')
+    if hasattr(writer,'is_ctrl'): ctrld['is_ctrl'] = writer.is_ctrl
 
 
 def dumps(value, *, fmt=FMT_XML, skipkeys=False, sort_keys=True,
-          aware_datetime=False, ctrld=ctrld_def):
+          aware_datetime=False, ctrld={}):
     """Return a bytes object with the contents for a .plist file.
     """
     fp = BytesIO()
