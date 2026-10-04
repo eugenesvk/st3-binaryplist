@@ -51,8 +51,7 @@ class BinaryPlistCommand(EventListener):
 
 class BinaryPlistToggleCommand(TextCommand):
   def to_xml_plist(self, edit, view):
-    """Reads in the view's file, converts it to XML and replaces the view's
-    buffer with the XML text."""
+    """Reads in the view's file, converts it to XML and replaces the view's buffer with the XML text."""
     file_name = view.file_name()
     if file_name and file_name != '' and os.path.isfile(file_name) == True:
       with open(file_name, 'rb') as fp:
@@ -66,8 +65,7 @@ class BinaryPlistToggleCommand(TextCommand):
       view.set_scratch(True)
 
   def to_binary_plist(self, view):
-    """Converts the view's XML text back to a binary plist and writes it out
-    to the view's file."""
+    """Converts the view's XML text back to a binary plist and writes it out to the view's file."""
     file_name = view.file_name()
     if file_name and file_name != '' and os.path.isfile(file_name) == True:
       bytes = view.substr(Region(0, view.size())).encode('utf-8')
