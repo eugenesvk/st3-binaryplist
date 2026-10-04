@@ -425,7 +425,7 @@ class _DumbXMLWriter:
             (value,is_ctrl,is_dupe) = _escape(value,self.is_ctrl,self.is_dupe)
             if not self.is_ctrl and is_ctrl: self.is_ctrl = True
             if not self.is_dupe and is_dupe: self.is_dupe = True
-            self.writeln("<%s>%s</%s>" % (element, value, element))
+            self.writeln("<%s>%s</%s>" % (element, value, element), nl)
 
         else:
             self.writeln("<%s/>" % element)
