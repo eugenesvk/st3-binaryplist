@@ -60,8 +60,10 @@ class BinaryPlistToggleCommand(TextCommand):
       cfg = sublime.load_settings("BinaryPlist.sublime-settings")
       cfgv= view.settings()
       # Save pre/pos values to document's vars so that you can't change them after load
-      pre = cfg.get("pre",None); if pre: ctrld['pre']=pre; cfgv.set('BinaryPlist.pre',pre)
-      pos = cfg.get("pos",None); if pos: ctrld['pos']=pos; cfgv.set('BinaryPlist.pos',pos)
+      pre = cfg.get("pre",None)
+      pos = cfg.get("pos",None)
+      if isinstance(pre,str): ctrld['pre']=pre; cfgv.set('BinaryPlist.pre',pre)
+      if isinstance(pos,str): ctrld['pos']=pos; cfgv.set('BinaryPlist.pos',pos)
       is_warn = cfg.get("warn_dupe",True)
 
       full_text = plistlib.dumps(pl,ctrld=ctrld).decode('utf-8')
@@ -86,8 +88,10 @@ class BinaryPlistToggleCommand(TextCommand):
           cfg = sublime.load_settings("BinaryPlist.sublime-settings")
           cfgv= view.settings()
           # Load pre/pos values from document's vars in case they were changed after load
-          pre = cfgv.get("BinaryPlist.pre",cfg.get("pre",None)); if pre: ctrld['pre']=pre
-          pos = cfgv.get("BinaryPlist.pos",cfg.get("pos",None)); if pos: ctrld['pos']=pos
+          pre = cfgv.get("BinaryPlist.pre",cfg.get("pre",None))
+          pos = cfgv.get("BinaryPlist.pos",cfg.get("pos",None))
+          if isinstance(pre,str): ctrld['pre']=pre
+          if isinstance(pos,str): ctrld['pos']=pos
           plistlib.dump(pl, fp, fmt=plistlib.FMT_BINARY, ctrld=ctrld)
       except Exception as e:
         sublime.error_message(str(e))
