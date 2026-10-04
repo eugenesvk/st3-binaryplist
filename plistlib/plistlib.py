@@ -125,14 +125,14 @@ def get_esc_comment(q1=str,q2=str):
     return f"""
 <!-- Control chars u0–u1f + u1f (∑30 excluding ␉u9 ␊uA ␍uD) are escape-encoded:
   • by 'quoting' {q1}⎀{q2} in {repr(q1)} and {repr(q2)}
-  • their symbolic ⎀ representation: ␀␁␂␃␄␅␆␇␈␋␌␎␏␐␑␒␓␔␕␖␗␘␙␚␛␜␝␞␟ ␡, for example: Backspace  is {q1}␈{q2}
+  • their symbolic ⎀ representation: ␀␁␂␃␄␅␆␇␈␋␌␎␏␐␑␒␓␔␕␖␗␘␙␚␛␜␝␞␟ ␡, for example: Delete  is {q1}␡{q2}
   ␍ (incl. in ␍␊) is also escape-encoded until Sublime Text fixes its bug of corrupting mixed newlines (upvote github.com/sublimehq/sublime_text/issues/182) -->
 """
 def get_dupe_comment(q1=str,q2=str):
     return f"""
 <!-- ⚠data loss: the source document contains the same escaped control chars used to escape actual control chars, for example:
-  • Backspace  is escaped as {q1}␈{q2}, but this escaped form was already present
-  Saving the file will convert {q1}␈{q2} back to Backspace  even if nothing was escaped, leading to a data loss❗
+  • Delete  is escaped as {q1}␡{q2}, but this escaped form was already present
+  Saving the file will convert {q1}␡{q2} back to Delete  even if nothing was escaped, leading to a data loss❗
   Workaround: use alternative escape quotes in plugin settings -->
 """
 
