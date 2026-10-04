@@ -155,16 +155,28 @@ class Singleton(type): # doesn't deadlock: if both Class_1 and Class_2 implement
 _q1='\U000FFFFE' # Use PUA last 2 chars as quotes for special chars
 _q2='\U000FFFFF'
 class CFG(metaclass=Singleton):
+    is_init = False
     # U+  E000–  F8FF  6,400 BMP    Apple uses U+F700–F8FF, just in case use the next SPUA-A
     # U+ F0000– FFFFF 65,536 SPUA-A
 
     def __init__(self, q1=_q1,q2=_q2):
+        CFG.is_init = True
         self.q1 = q1
         self.q2 = q2
-        self.esc_comment = get_esc_comment(q1,q2)
+        self.esc_comment  = get_esc_comment (q1,q2)
         self.dupe_comment = get_dupe_comment(q1,q2)
         (self.char_rep,self.char_rev) = self.fill_char_replace(q1,q2)
         self.e_cr = f"{q1}␍{q2}" # (incl. in ␍␊) is also escape-encoded due to Sublime Text corrupting mixed newlines
+
+    def update(self, q1=None,q2=None):
+        if q1: self.q1 =      q1
+        else :      q1 = self.q1
+        if q2: self.q2 =      q2
+        else :      q2 = self.q2
+        self.esc_comment  = get_esc_comment (q1,q2)
+        self.dupe_comment = get_dupe_comment(q1,q2)
+        (self.char_rep,self.char_rev) = self.fill_char_replace(q1,q2)
+        self.e_cr = f"{q1}␍{q2}"
 
     def fill_char_replace(self, q1, q2):
         c_rep = dict() # Dictionary to replace those control chars to preserve them on save
@@ -1030,13 +1042,24 @@ def dump(value, fp, *, fmt=FMT_XML, sort_keys=True, skipkeys=False,
 
     writer = _FORMATS[fmt]["writer"](fp, sort_keys=sort_keys, skipkeys=skipkeys,
                                      aware_datetime=aware_datetime)
-    if ctrld and      ('pre' in ctrld \
-        or             'pos' in ctrld):
-        q1 = ctrld.get('pre',_q1)
-        if q1 in ctrl_esc_sym: raise ValueError(f"Escape quotes can't be control chars! {repr(q1)} {q1}")
-        q2 = ctrld.get('pos',_q2)
-        if q2 in ctrl_esc_sym: raise ValueError(f"Escape quotes can't be control chars! {repr(q2)} {q2}")
-        C = CFG(q1, q2)
+    if ctrld:
+        if (q1 := ctrld.get('pre', None)):
+            if R'\u' in q1.lower(): q1 = q1.encode("raw_unicode_escape").decode("unicode_escape") #converts literal \u00B0 to °
+            if q1 in ctrl_esc_sym: raise ValueError(f"Escape quotes can't be control chars! {repr(q1)} {q1}")
+            print(f"library dump, got q1 = {q1}")
+        if (q2 := ctrld.get('pos', None)):
+            if R'\u' in q2.lower(): q2 = q2.encode("raw_unicode_escape").decode("unicode_escape")
+            if q2 in ctrl_esc_sym: raise ValueError(f"Escape quotes can't be control chars! {repr(q2)} {q2}")
+            print(f"library dump, got q2 = {q2}")
+        if not CFG.is_init: C = CFG(q1,q2)
+        else:
+            C = CFG()
+            if  q1 != C.q1 or \
+                q2 != C.q2: C.update( q1,  q2)
+    else: # restore defaults if previous passed configs changed it
+        C     = CFG()
+        if  _q1    != C.q1 or \
+            _q2    != C.q2: C.update(_q1, _q2)
     writer.write(value)
     if hasattr(writer,'is_ctrl'): ctrld['is_ctrl'] = writer.is_ctrl
 
