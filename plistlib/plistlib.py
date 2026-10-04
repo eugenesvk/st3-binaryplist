@@ -169,10 +169,10 @@ class CFG(metaclass=Singleton):
         self.e_cr = f"{q1}␍{q2}" # (incl. in ␍␊) is also escape-encoded due to Sublime Text corrupting mixed newlines
 
     def update(self, q1=None,q2=None):
-        if q1: self.q1 =      q1
-        else :      q1 = self.q1
-        if q2: self.q2 =      q2
-        else :      q2 = self.q2
+        if isinstance(q1,str): self.q1 =      q1
+        else                 :      q1 = self.q1
+        if isinstance(q2,str): self.q2 =      q2
+        else                 :      q2 = self.q2
         self.esc_comment  = get_esc_comment (q1,q2)
         self.dupe_comment = get_dupe_comment(q1,q2)
         (self.char_rep,self.char_rev) = self.fill_char_replace(q1,q2)
@@ -1043,11 +1043,11 @@ def dump(value, fp, *, fmt=FMT_XML, sort_keys=True, skipkeys=False,
     writer = _FORMATS[fmt]["writer"](fp, sort_keys=sort_keys, skipkeys=skipkeys,
                                      aware_datetime=aware_datetime)
     if ctrld:
-        if (q1 := ctrld.get('pre', None)):
+        if isinstance((q1 := ctrld.get('pre',None)), str):
             if R'\u' in q1.lower(): q1 = q1.encode("raw_unicode_escape").decode("unicode_escape") #converts literal \u00B0 to °
             if q1 in ctrl_esc_sym: raise ValueError(f"Escape quotes can't be control chars! {repr(q1)} {q1}")
             print(f"library dump, got q1 = {q1}")
-        if (q2 := ctrld.get('pos', None)):
+        if isinstance((q2 := ctrld.get('pos',None)), str):
             if R'\u' in q2.lower(): q2 = q2.encode("raw_unicode_escape").decode("unicode_escape")
             if q2 in ctrl_esc_sym: raise ValueError(f"Escape quotes can't be control chars! {repr(q2)} {q2}")
             print(f"library dump, got q2 = {q2}")
