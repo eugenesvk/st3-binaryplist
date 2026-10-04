@@ -1022,8 +1022,10 @@ def dump(value, fp, *, fmt=FMT_XML, sort_keys=True, skipkeys=False,
                                      aware_datetime=aware_datetime)
     if ctrld and      ('pre' in ctrld \
         or             'pos' in ctrld):
-        q1 = ctrld.get('pre',CFG.q1)
-        q2 = ctrld.get('pos',CFG.q2)
+        q1 = ctrld.get('pre',_q1)
+        if q1 in ctrl_esc_sym: raise ValueError(f"Escape quotes can't be control chars! {repr(q1)} {q1}")
+        q2 = ctrld.get('pos',_q2)
+        if q2 in ctrl_esc_sym: raise ValueError(f"Escape quotes can't be control chars! {repr(q2)} {q2}")
         C = CFG(q1, q2)
     writer.write(value)
     if hasattr(writer,'is_ctrl'): ctrld['is_ctrl'] = writer.is_ctrl
