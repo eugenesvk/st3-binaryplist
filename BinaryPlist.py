@@ -56,12 +56,22 @@ class BinaryPlistToggleCommand(TextCommand):
     if file_name and file_name != '' and os.path.isfile(file_name) == True:
       with open(file_name, 'rb') as fp:
         pl = plistlib.load(fp)
-      full_text = plistlib.dumps(pl).decode('utf-8')
-      if "�" in full_text: sublime.message_dialog("This file contains “�” characters, likely due to control characters in strings.\n\nIf you save the file, these replacement characters will remain.")
+      ctrld = {}
+      cfg = sublime.load_settings("BinaryPlist.sublime-settings")
+      cfgv= view.settings()
+      # Save pre/pos values to document's vars so that you can't change them after load
+      pre = cfg.get("pre",None); if pre: ctrld['pre']=pre; cfgv.set('BinaryPlist.pre',pre)
+      pos = cfg.get("pos",None); if pos: ctrld['pos']=pos; cfgv.set('BinaryPlist.pos',pos)
+      is_warn = cfg.get("warn_dupe",True)
+
+      full_text = plistlib.dumps(pl,ctrld=ctrld).decode('utf-8')
+      msg_status = '⇩Binary PList'
+      if ctrld.get('is_ctrl',False): msg_status += " with ❗␛Controls, see end of file…"
+      if ctrld.get('is_dupe',False) and is_warn: sublime.message_dialog("This file contains the same escaped control chars used to escape actual control chars!\n\nIf you save the file, these replacement chars will be unescaped and thus lost!")
       # print("view.size()={0}".format(view.size()))
       view.replace (edit, Region(0, view.size()), full_text)
       view.end_edit(edit)
-      view.set_status('is_binary_plist', 'Saving As Binary Property List')
+      view.set_status('is_binary_plist', msg_status)
       view.set_scratch(True)
 
   def to_binary_plist(self, view):
@@ -72,7 +82,13 @@ class BinaryPlistToggleCommand(TextCommand):
       try:
         pl = plistlib.loads(bytes, fmt=plistlib.FMT_XML)
         with open(file_name, 'wb') as fp:
-          plistlib.dump(pl, fp, fmt=plistlib.FMT_BINARY)
+          ctrld = {}
+          cfg = sublime.load_settings("BinaryPlist.sublime-settings")
+          cfgv= view.settings()
+          # Load pre/pos values from document's vars in case they were changed after load
+          pre = cfgv.get("BinaryPlist.pre",cfg.get("pre",None)); if pre: ctrld['pre']=pre
+          pos = cfgv.get("BinaryPlist.pos",cfg.get("pos",None)); if pos: ctrld['pos']=pos
+          plistlib.dump(pl, fp, fmt=plistlib.FMT_BINARY, ctrld=ctrld)
       except Exception as e:
         sublime.error_message(str(e))
         raise e
