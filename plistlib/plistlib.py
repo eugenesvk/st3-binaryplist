@@ -258,10 +258,12 @@ def _dict_items(d, sort_keys, skipkeys):
 def _escape(text, is_ctrl, is_dupe):
     C = CFG()
     # text = _controlCharPat.sub("�", text)
+    if _c_char_rev_pat.search(text):
+        for    hex,esc in C.char_rep.items(): # ‹␇› (escape-quoted)
+            if not is_dupe and esc in text: is_dupe = True; break
     if _controlCharPat.search(text):
         if not is_ctrl: is_ctrl = True
         for    hex,esc in C.char_rep.items(): #\x07 :  ‹␇›  (escape-quoted)
-            if not is_dupe and esc in text: is_dupe = True
             if hex in text: text = text.replace(hex,esc)
     # if "\r\n" in text: print(f"READ: replacing ␍␤ e_crln |{text}|")
     # if "\r"   in text: print(f"READ: replacing ␍  e_cr   |{text}|")
@@ -1060,6 +1062,7 @@ def dump(value, fp, *, fmt=FMT_XML, sort_keys=True, skipkeys=False,
             _q2    != C.q2: C.update(_q1, _q2)
     writer.write(value)
     if hasattr(writer,'is_ctrl'): ctrld['is_ctrl'] = writer.is_ctrl
+    if hasattr(writer,'is_dupe'): ctrld['is_dupe'] = writer.is_dupe
 
 
 def dumps(value, *, fmt=FMT_XML, skipkeys=False, sort_keys=True,
