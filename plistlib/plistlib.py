@@ -346,7 +346,7 @@ class _DumbXMLWriter:
 
 class _PlistWriter(_DumbXMLWriter):
     def __init__(
-            self, file, indent_level=0, indent=b"\t", writeHeader=1,
+            self, file, indent_level=0, indent=b"  ", writeHeader=1,
             sort_keys=True, skipkeys=False, aware_datetime=False):
 
         if writeHeader:
