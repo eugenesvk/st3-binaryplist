@@ -55,6 +55,7 @@ import binascii
 import codecs
 import contextlib
 import datetime
+import enum
 from io import BytesIO
 import itertools
 import os
@@ -63,8 +64,10 @@ import struct
 from warnings import warn
 from xml.parsers.expat import ParserCreate
 
-FMT_XML = 'FMT_XML'
-FMT_BINARY = 'FMT_BINARY'
+
+PlistFormat = enum.Enum('PlistFormat', 'FMT_XML FMT_BINARY', module=__name__)
+globals().update(PlistFormat.__members__)
+
 
 #
 #
@@ -295,7 +298,10 @@ def _date_to_string(d):
     )
 
 def _escape(text):
-    text = _controlCharPat.sub("�", text)
+    m = _controlCharPat.search(text)
+    if m is not None:
+        raise ValueError("strings can't contains control characters; "
+                         "use bytes instead")
     text = text.replace("\r\n", "\n")       # convert DOS line endings
     text = text.replace("\r", "\n")         # convert Mac line endings
     text = text.replace("&", "&amp;")       # escape '&'
