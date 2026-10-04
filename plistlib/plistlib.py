@@ -403,7 +403,7 @@ class _PlistWriter(_DumbXMLWriter):
         self._indent_level -= 1
         maxlinelength = max(
             16,
-            76 - len((self.indent * self._indent_level).expandtabs()))
+            116 - len((self.indent * self._indent_level).expandtabs()))
 
         for line in _encode_base64(data, maxlinelength).split(b"\n"):
             if line:
