@@ -194,18 +194,24 @@ class Data:
 
 # XML 'header'
 PLISTHEADER = b"""<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">"""
+esc_comment = """
+<!-- Control chars u0–u1f + u1f (∑30 excluding ␉u9 ␊uA ␍uD) are escape-encoded:
+  • by quoting    "⎀" in uFFFFE and uFFFFF (Unicode SPUA-A block)
+  • their symbolic ⎀ representation: ␀␁␂␃␄␅␆␇␈␋␌␎␏␐␑␒␓␔␕␖␗␘␙␚␛␜␝␞␟ ␡, for example: Backspace  is 󿿾␈󿿿
+  ⚠data loss: if the source binary plist used these quoted sequences, they will be reconverted to control chars/lost on save
+  ␍ (incl. in ␍␊) is also escape-encoded until Sublime Text fixes its bug of corrupting mixed newlines (upvote github.com/sublimehq/sublime_text/issues/182) -->
+"""
 
+q1='\U000FFFFE' # Use PUA last 2 chars as quotes for special chars
+q2='\U000FFFFF' # TODO: make user configurable
 # U+  E000–  F8FF  6,400 BMP    Apple uses U+F700–F8FF, just in case use the next PUA-A
 # U+ F0000– FFFFF 65,536 SPUA-A
-# Use PUA ending 2 chars as quotes for special chars
-q1='\U000FFFFE' # PUA-A
-q2='\U000FFFFF'
-e_crln = f"{q1}␍{q2}\n" # todo: make user configurable
-e_cr   = f"{q1}␍{q2}"
-e_etx  = f"{q1}␃{q2}"
+# e_crln = f"{q1}␍{q2}\n"
+e_cr   = f"{q1}␍{q2}" # (incl. in ␍␊) is also escape-encoded due to Sublime Text corrupting mixed newlines
+
 _controlCharPat = re.compile( # Regex to find any control chars, except for \x9≝\t \xA≝\n \xD≝\r
     r"[\x00\x01\x02\x03\x04\x05\x06\x07\x08\x0b\x0c\x0e\x0f"
-     r"\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1a\x1b\x1c\x1d\x1e\x1f]")
+     r"\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1a\x1b\x1c\x1d\x1e\x1f\x7f]")
 _c_char_rev_pat = re.compile( # Regex to find any control char symbols, except for \t \n \r (not escaped!)
     r"[␀␁␂␃␄␅␆␇␈␋␌␎␏␐␑␒␓␔␕␖␗␘␙␚␛␜␝␞␟␡]") #␉ ␊ ␍
 _c_char_repl = { # Dictionary to replace those control chars to preserve them on save
@@ -218,7 +224,8 @@ _c_char_repl = { # Dictionary to replace those control chars to preserve them on
   '\x11':f'{q1}␑{q2}','\x12':f'{q1}␒{q2}','\x13':f'{q1}␓{q2}','\x14':f'{q1}␔{q2}','\x15':f'{q1}␕{q2}',
   '\x16':f'{q1}␖{q2}','\x17':f'{q1}␗{q2}','\x18':f'{q1}␘{q2}','\x19':f'{q1}␙{q2}',
   '\x1a':f'{q1}␚{q2}','\x1b':f'{q1}␛{q2}','\x1c':f'{q1}␜{q2}','\x1d':f'{q1}␝{q2}','\x1e':f'{q1}␞{q2}',
-  '\x1f':f'{q1}␟{q2}','\x7f':f'{q1}␡{q2}',
+  '\x1f':f'{q1}␟{q2}',
+  '\x7f':f'{q1}␡{q2}', # technically not a control char
   }
 _c_char_rev = { # …Reverse
   f'{q1}␀{q2}':'\x00',
@@ -230,7 +237,8 @@ _c_char_rev = { # …Reverse
   f'{q1}␑{q2}':'\x11',f'{q1}␒{q2}':'\x12',f'{q1}␓{q2}':'\x13',f'{q1}␔{q2}':'\x14',f'{q1}␕{q2}':'\x15',
   f'{q1}␖{q2}':'\x16',f'{q1}␗{q2}':'\x17',f'{q1}␘{q2}':'\x18',f'{q1}␙{q2}':'\x19',
   f'{q1}␚{q2}':'\x1a',f'{q1}␛{q2}':'\x1b',f'{q1}␜{q2}':'\x1c',f'{q1}␝{q2}':'\x1d',f'{q1}␞{q2}':'\x1e',
-  f'{q1}␟{q2}':'\x1f',f'{q1}␡{q2}':'\x7f',
+  f'{q1}␟{q2}':'\x1f',
+  f'{q1}␡{q2}':'\x7f',
   }
 
 def _encode_base64(s, maxlinelength=76):
@@ -267,30 +275,32 @@ def _date_to_string(d):
         d.hour, d.minute, d.second
     )
 
-def _escape(text):
+def _escape(text, is_ctrl):
     # text = _controlCharPat.sub("�", text)
     if _controlCharPat.search(text):
-      for  hex,esc in _c_char_repl.items(): #\x07 :  ‹␇›  (escape-quoted)
-        if hex in text:
-          text = text.replace(hex,esc)
-          # print(f"READ: repl {hex}→{esc} in |{text}|")
+        if not is_ctrl: is_ctrl = True
+        for  hex,esc in _c_char_repl.items(): #\x07 :  ‹␇›  (escape-quoted)
+            if hex in text:
+                text = text.replace(hex,esc)
+                # print(f"READ: repl {hex}→{esc} in |{text}|")
     # if "\r\n" in text: print(f"READ: replacing ␍␤ e_crln |{text}|")
     # if "\r"   in text: print(f"READ: replacing ␍  e_cr   |{text}|")
-    text = text.replace("\r\n",e_crln ) # escape DOS line endings
+    # text = text.replace("\r\n",e_crln ) # escape DOS line endings
+    if not is_ctrl and "\r" in text: is_ctrl = True
     text = text.replace("\r"  ,e_cr   ) # escape Mac line endings
     text = text.replace("&"   ,"&amp;") # escape '&'
     text = text.replace("<"   ,"&lt;" ) # escape '<'
     text = text.replace(">"   ,"&gt;" ) # escape '>'
-    return text
+    return (text,is_ctrl)
 def _un_escape(text):
     if _c_char_rev_pat.search(text):
-      for  esc,hex in _c_char_rev.items(): #‹␇›  (escape-quoted) : \x07
-        if esc in text:
-          text = text.replace(esc,hex)
-          # print(f"WRITE: repl {esc}→{hex} in |{text}|")
+        for  esc,hex in _c_char_rev.items(): #‹␇›  (escape-quoted) : \x07
+            if esc in text:
+                text = text.replace(esc,hex)
+                # print(f"WRITE: repl {esc}→{hex} in |{text}|")
     # if e_crln in text: print("WRITE: replacing ␍␤ e_crln")
     # if e_cr   in text: print("WRITE: replacing ␍  e_cr"  )
-    text = text.replace(e_crln,"\r\n")
+    # text = text.replace(e_crln,"\r\n")
     text = text.replace(e_cr  ,"\r"  )
     return text
 
@@ -395,6 +405,7 @@ class _DumbXMLWriter:
         self.stack = []
         self._indent_level = indent_level
         self.indent = indent
+        self.is_ctrl = False
 
     def begin_element(self, element):
         self.stack.append(element)
@@ -409,7 +420,9 @@ class _DumbXMLWriter:
 
     def simple_element(self, element, value=None, nl=True):
         if value is not None:
-            value = _escape(value)
+            (value,is_ctrl) = _escape(value,self.is_ctrl)
+            if not self.is_ctrl and is_ctrl:
+                self.is_ctrl = True
             self.writeln  ("<%s>%s</%s>" % (element, value, element),nl)
         else: self.writeln("<%s/>"       %  element                 ,nl)
 
@@ -438,6 +451,7 @@ class _PlistWriter(_DumbXMLWriter):
     def write(self, value):
         self.writeln("<plist version=\"1.0\">")
         self.write_value(value)
+        if self.is_ctrl: self.writex(esc_comment)
         self.writex("</plist>")
 
     def write_value(self, value):
@@ -856,27 +870,23 @@ def load(fp, *, fmt=None, use_builtin_types=True, dict_type=dict):
 
 def loads(value, *, fmt=None, use_builtin_types=True, dict_type=dict):
     """Read a .plist file from a bytes object.
-    Return the unpacked root object (which usually is a dictionary).
-    """
+    Return the unpacked root object (which usually is a dictionary)"""
     fp = BytesIO(value)
-    return load(
-        fp, fmt=fmt, use_builtin_types=use_builtin_types, dict_type=dict_type)
+    return load(fp, fmt=fmt, use_builtin_types=use_builtin_types, dict_type=dict_type)
 
 
 def dump(value, fp, *, fmt=FMT_XML, sort_keys=True, skipkeys=False):
-    """Write 'value' to a .plist file. 'fp' should be a (writable)
-    file object.
-    """
+    """Write 'value' to a .plist file. 'fp' should be a (writable) file object"""
     if fmt not in _FORMATS:
         raise ValueError("Unsupported format: %r"%(fmt,))
 
     writer = _FORMATS[fmt]["writer"](fp, sort_keys=sort_keys, skipkeys=skipkeys)
     writer.write(value)
+    if hasattr(writer,'is_ctrl'): return writer.is_ctrl
 
 
 def dumps(value, *, fmt=FMT_XML, skipkeys=False, sort_keys=True):
-    """Return a bytes object with the contents for a .plist file.
-    """
+    """Return a bytes object with the contents for a .plist file"""
     fp = BytesIO()
-    dump(value, fp, fmt=fmt, skipkeys=skipkeys, sort_keys=sort_keys)
+    is_ctrl = dump(value, fp, fmt=fmt, skipkeys=skipkeys, sort_keys=sort_keys)
     return fp.getvalue()
