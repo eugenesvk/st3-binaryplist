@@ -1046,11 +1046,9 @@ def dump(value, fp, *, fmt=FMT_XML, sort_keys=True, skipkeys=False,
         if isinstance((q1 := ctrld.get('pre',None)), str):
             if R'\u' in q1.lower(): q1 = q1.encode("raw_unicode_escape").decode("unicode_escape") #converts literal \u00B0 to °
             if q1 in ctrl_esc_sym: raise ValueError(f"Escape quotes can't be control chars! {repr(q1)} {q1}")
-            print(f"library dump, got q1 = {q1}")
         if isinstance((q2 := ctrld.get('pos',None)), str):
             if R'\u' in q2.lower(): q2 = q2.encode("raw_unicode_escape").decode("unicode_escape")
             if q2 in ctrl_esc_sym: raise ValueError(f"Escape quotes can't be control chars! {repr(q2)} {q2}")
-            print(f"library dump, got q2 = {q2}")
         if not CFG.is_init: C = CFG(q1,q2)
         else:
             C = CFG()
