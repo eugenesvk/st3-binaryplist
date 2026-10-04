@@ -1,38 +1,23 @@
 r"""plistlib.py -- a tool to generate and parse MacOSX .plist files.
-
-The property list (.plist) file format is a simple XML pickle supporting
-basic object types, like dictionaries, lists, numbers and strings.
-Usually the top level object is a dictionary.
-
-To write out a plist file, use the dump(value, file)
-function. 'value' is the top level object, 'file' is
-a (writable) file object.
-
-To parse a plist from a file, use the load(file) function,
-with a (readable) file object as the only argument. It
-returns the top level object (again, usually a dictionary).
-
-To work with plist data in bytes objects, you can use loads()
-and dumps().
-
-Values can be strings, integers, floats, booleans, tuples, lists,
-dictionaries (but only with string keys), Data, bytes, bytearray, or
-datetime.datetime objects.
+The property list (.plist) file format is a simple XML pickle supporting basic object types, like dictionaries, lists, numbers and strings. Usually the top level object is a dictionary.
+To write out a plist file, use the dump(value, file) function. 'value' is the top level object, 'file' is a (writable) file object.
+To parse a plist from a file, use the load(file) function, with a (readable) file object as the only argument. It returns the top level object (again, usually a dictionary).
+To work with plist data in bytes objects, you can use loads() and dumps().
+Values can be strings, integers, floats, booleans, tuples, lists, dictionaries (but only with string keys), Data, bytes, bytearray, or datetime.datetime objects.
 
 Generate Plist example:
-
     pl = dict(
         aString = "Doodah",
-        aList = ["A", "B", 12, 32.1, [1, 2, 3]],
-        aFloat = 0.1,
-        anInt = 728,
-        aDict = dict(
+        aList   = ["A", "B", 12, 32.1, [1, 2, 3]],
+        aFloat  = 0.1,
+        anInt   = 728,
+        aDict   = dict(
             anotherString = "<hello & hi there!>",
             aUnicodeValue = "M\xe4ssig, Ma\xdf",
-            aTrueValue = True,
-            aFalseValue = False,
+            aTrueValue    = True,
+            aFalseValue   = False,
         ),
-        someData = b"<binary gunk>",
+        someData     = b"<binary gunk>",
         someMoreData = b"<lots of binary gunk>" * 10,
         aDate = datetime.datetime.fromtimestamp(time.mktime(time.gmtime())),
     )
@@ -40,7 +25,6 @@ Generate Plist example:
         dump(pl, fp)
 
 Parse Plist example:
-
     with open(fileName, 'rb') as fp:
         pl = load(fp)
     print(pl["aKey"])
@@ -136,9 +120,7 @@ class Plist(_InternalDict):
 
 
 def readPlist(pathOrFile):
-    """
-    Read a .plist from a path or file. pathOrFile should either
-    be a file name, or a readable binary file object.
+    """Read a .plist from a path or file. pathOrFile should either be a file name, or a readable binary file object.
 
     This function is deprecated, use load instead.
     """
@@ -149,9 +131,7 @@ def readPlist(pathOrFile):
             dict_type=_InternalDict)
 
 def writePlist(value, pathOrFile):
-    """
-    Write 'value' to a .plist file. 'pathOrFile' may either be a
-    file name or a (writable) file object.
+    """Write 'value' to a .plist file. 'pathOrFile' may either be a file name or a (writable) file object.
 
     This function is deprecated, use dump instead.
     """
@@ -161,8 +141,7 @@ def writePlist(value, pathOrFile):
 
 
 def readPlistFromBytes(data):
-    """
-    Read a plist data from a bytes object. Return the root object.
+    """Read a plist data from a bytes object. Return the root object.
 
     This function is deprecated, use loads instead.
     """
@@ -171,8 +150,7 @@ def readPlistFromBytes(data):
 
 
 def writePlistToBytes(value):
-    """
-    Return 'value' as a plist-formatted bytes object.
+    """Return 'value' as a plist-formatted bytes object.
 
     This function is deprecated, use dumps instead.
     """
@@ -183,8 +161,7 @@ def writePlistToBytes(value):
 
 
 class Data:
-    """
-    Wrapper for binary data.
+    """Wrapper for binary data.
 
     This class is deprecated, use a bytes object instead.
     """
@@ -862,8 +839,7 @@ _FORMATS={
 
 def load(fp, *, fmt=None, use_builtin_types=True, dict_type=dict):
     """Read a .plist file. 'fp' should be (readable) file object.
-    Return the unpacked root object (which usually is a dictionary).
-    """
+    Return the unpacked root object (which usually is a dictionary)"""
     if fmt is None:
         header = fp.read(32)
         fp.seek(0)
@@ -871,12 +847,8 @@ def load(fp, *, fmt=None, use_builtin_types=True, dict_type=dict):
             if info['detect'](header):
                 P = info['parser']
                 break
-
-        else:
-            raise InvalidFileException()
-
-    else:
-        P = _FORMATS[fmt]['parser']
+        else: raise InvalidFileException()
+    else: P = _FORMATS[fmt]['parser']
 
     p = P(use_builtin_types=use_builtin_types, dict_type=dict_type)
     return p.parse(fp)
