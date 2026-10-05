@@ -16,6 +16,9 @@ All notable changes to this project will be documented in this file
 <!-- - 🔒 __Security__ -->
   <!-- + vulnerabilities -->
 
+- 🐞 __Fixed__
+  + wrong defaults in user config template
+
 [1.0.3004]: https://github.com/eugenesvk/st3-binaryplist/releases/tag/1.0.3004
 ## [1.0.3004]
 - ✨ __Added__
