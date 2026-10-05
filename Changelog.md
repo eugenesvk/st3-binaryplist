@@ -16,6 +16,17 @@ All notable changes to this project will be documented in this file
 <!-- - 🔒 __Security__ -->
   <!-- + vulnerabilities -->
 
+- ✨ __Added__
+  + support for round-trip of control chars like Backspace  `\x08` by quoting their symbolic representation `␈` in PUA Unicode chars (≝`󿿾␈󿿿` or `uFFFFE` `uFFFFF`)
+    + user-configurable escape "quotes" by setting `pre` and `pos` values in `BinaryPlist.sublime-settings`
+    - ⚠data loss: arbitrary escaping is NOT supported,so if the source document contains the same escaped control chars used to escape actual control chars, those will be unescaped on save
+  + supports `UID`
+- Δ __Changed__
+  - slightly denser layout, removes newlines between `key`s and `value`s and increases max line length from 80 to 120
+  - use spaces for indents
+- 🗑️ __Removed__
+  - support for older Sublime Text versions due to requires Python 3.14, included since Sublime Text build 4205 (2026-Apr-23)
+
 [1.0.1]: https://github.com/tyrone-sudeium/st3-binaryplist/releases/tag/1.0.1
 ## [1.0.1]
 
