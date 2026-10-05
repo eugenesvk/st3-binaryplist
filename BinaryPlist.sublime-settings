@@ -5,8 +5,12 @@
   // • Backspace  is escaped as 󿿾␈󿿿, but this escaped form was already present
   // Saving the file will convert 󿿾␈󿿿 back to Backspace  even if nothing was escaped, leading to a data loss
   // (you'll get a dialog warning unless suppressed with 'warn_dupe', and a comment warning at the bottom of the document)
-// "pre":"\\U000FFFFE", //prefix  character to quote-escape control chars
-// "pos":"\\U000FFFFF", //postfix character …
+// "esc_pre":"\\U000FFFFE", //prefix  character to quote-escape control chars
+// "esc_pos":"\\U000FFFFF", //postfix character …
+
+// "indent"      :"  " ,//≝'  ' or use tabs '\t'
+// "key_val_sep" :""   ,//≝''   denser view with key/value in 1 line, or use newline '\n'
+// "max_line_len": 120,//≝120
 
 // "warn_dupe":true, // Show a warning dialog window if the source document contains the same escaped control chars used to escape actual control chars
 }
