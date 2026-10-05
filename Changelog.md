@@ -25,7 +25,7 @@ All notable changes to this project will be documented in this file
 ## [1.0.3004]
 - ✨ __Added__
   + support for round-trip of control chars like Backspace  `\x08` by quoting their symbolic representation `␈` in PUA Unicode chars (≝`󿿾␈󿿿` or `uFFFFE` `uFFFFF`)
-    + user-configurable escape "quotes" by setting `pre` and `pos` values in `BinaryPlist.sublime-settings`
+    + user-configurable escape "quotes" by setting `esc_pre` and `esc_pos` values in `BinaryPlist.sublime-settings`
     - ⚠data loss: arbitrary escaping is NOT supported,so if the source document contains the same escaped control chars used to escape actual control chars, those will be unescaped on save
   + supports `UID`
   + support for configuring key/value newline separator, indent char, and max line lenght value
