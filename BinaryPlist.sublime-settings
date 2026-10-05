@@ -7,6 +7,7 @@
   // (you'll get a dialog warning unless suppressed with 'warn_dupe', and a comment warning at the bottom of the document)
 // "esc_pre":"\\U000FFFFE", //prefix  character to quote-escape control chars
 // "esc_pos":"\\U000FFFFF", //postfix character …
+// Nicer-looking, but more error-prone alternatives: ⸂⎀⸃  ⸄⎀⸅  ⸜⎀⸝  ‹⎀›  ❴⎀❵  ❲⎀❳  ❰⎀❱ ⹙⎀⹚ ⹛⎀⹜ ⸢⎀⸣ ⁽⎀⁾ ⟅⎀⟆
 
 // "indent"      :"  " ,//≝'\t' or use '  ' for spaces
 // "key_val_sep" :""   ,//≝''   denser view with key/value in 1 line, or use newline '\n'
