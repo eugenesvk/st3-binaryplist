@@ -1,7 +1,7 @@
 # Changelog
 All notable changes to this project will be documented in this file
 
-[unreleased]: https://github.com/eugenesvk/st3-binaryplist/compare/1.0.3004...HEAD
+[unreleased]: https://github.com/eugenesvk/st3-binaryplist/compare/1.0.3005...HEAD
 ## [Unreleased]
 <!-- - ✨ __Added__ -->
   <!-- + new features -->
@@ -16,6 +16,8 @@ All notable changes to this project will be documented in this file
 <!-- - 🔒 __Security__ -->
   <!-- + vulnerabilities -->
 
+[1.0.3005]: https://github.com/eugenesvk/st3-binaryplist/releases/tag/1.0.3005
+## [1.0.3005]
 - 🐞 __Fixed__
   + wrong defaults in user config template
 
