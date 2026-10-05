@@ -48,5 +48,10 @@ believe this plugin improves on that one in a few key ways:
 [5]: https://github.com/relikd/Plist-Binary_sublime
 
 #### Fork extras
-  - denser layout, removes newlines between `key`s and `value`s
+  - requires Python 3.14, included since Sublime Text build 4205 (2026-Apr-23), but…
+  - supports `ID` added to the post 3.4 Python plist library
+  - supports round-trip of control chars like Backspace  `\x08` by quoting their symbolic representation `␈` in PUA Unicode chars (≝`󿿾␈󿿿` or `uFFFFE` `uFFFFF`)
+    - user-configurable escape "quotes" by setting `pre` and `pos` values in `BinaryPlist.sublime-settings`
+    - ⚠data loss: arbitrary escaping is NOT supported,so if the source document contains the same escaped control chars used to escape actual control chars, those will be unescaped on save
+  - slightly denser layout, removes newlines between `key`s and `value`s and increases max line length from 80 to 120
   - use spaces for indents
