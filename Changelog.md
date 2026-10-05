@@ -1,7 +1,7 @@
 # Changelog
 All notable changes to this project will be documented in this file
 
-[unreleased]: https://github.com/tyrone-sudeium/st3-binaryplist/compare/1.0.1...HEAD
+[unreleased]: https://github.com/eugenesvk/st3-binaryplist/compare/1.0.1...HEAD
 ## [Unreleased]
 <!-- - ✨ __Added__ -->
   <!-- + new features -->
@@ -27,7 +27,7 @@ All notable changes to this project will be documented in this file
 - 🗑️ __Removed__
   - support for older Sublime Text versions due to requires Python 3.14, included since Sublime Text build 4205 (2026-Apr-23)
 
-[1.0.1]: https://github.com/tyrone-sudeium/st3-binaryplist/releases/tag/1.0.1
+[1.0.1]: https://github.com/eugenesvk/st3-binaryplist/releases/tag/1.0.1
 ## [1.0.1]
 
 - 🐞 __Fixed__
