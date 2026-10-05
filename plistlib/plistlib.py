@@ -463,13 +463,14 @@ class _PlistParser:
 
 
 class _DumbXMLWriter:
-    def __init__(self, file, indent_level=0, indent="\t"):
+    def __init__(self, file, indent_level=0, indent=None):
         self.file = file
         self.stack = []
         self._indent_level = indent_level
-        self.indent = indent
+        self.indent = CFG().indent if indent is None else indent # "\t" todo: why is _PlistWriter b"\t"
         self.is_ctrl = False # signal when control chars are found
         self.is_dupe = False # warn when escaped sequence is already in the text
+        self.sep_kv = CFG().sep_kv
 
     def begin_element(self, element):
         self.stack.append(element)
@@ -487,7 +488,7 @@ class _DumbXMLWriter:
             (value,is_ctrl,is_dupe) = _escape(value,self.is_ctrl,self.is_dupe)
             if not self.is_ctrl and is_ctrl: self.is_ctrl = True
             if not self.is_dupe and is_dupe: self.is_dupe = True
-            self.writeln("<%s>%s</%s>" % (element, value, element), nl)
+            self.writeln("<%s>%s</%s>" % (element, value, element), nl if nl is True else self.sep_kv)
 
         else:
             self.writeln("<%s/>" % element)
@@ -501,14 +502,16 @@ class _DumbXMLWriter:
                 line = line.encode('utf-8')
             self.file.write(self._indent_level * self.indent)
             self.file.write(line)
-        if nl: self.file.write(b'\n')
+        if              nl is True: self.file.write(b'\n')
+        elif isinstance(nl,bytes ): self.file.write(   nl)
     def writex (self, line, nl=False):
       self.writeln(   line, nl)
 
 class _PlistWriter(_DumbXMLWriter):
     def __init__(
-            self, file, indent_level=0, indent=b"  ", writeHeader=1,
+            self, file, indent_level=0, indent=None, writeHeader=1,
             sort_keys=True, skipkeys=False, aware_datetime=False):
+        if indent is None: indent = CFG().indent #b"\t"
 
         if writeHeader:
             file.write(PLISTHEADER)
@@ -516,6 +519,7 @@ class _PlistWriter(_DumbXMLWriter):
         self._sort_keys = sort_keys
         self._skipkeys = skipkeys
         self._aware_datetime = aware_datetime
+        self.max_ll = CFG().max_ll
 
     def write(self, value):
         C = CFG()
@@ -565,7 +569,7 @@ class _PlistWriter(_DumbXMLWriter):
         self._indent_level -= 1
         maxlinelength = max(
             16,
-            116 - len((self.indent * self._indent_level).expandtabs()))
+            self.max_ll - len((self.indent * self._indent_level).expandtabs()))
 
         for line in _encode_base64(data, maxlinelength).split(b"\n"):
             if line:
@@ -1097,41 +1101,28 @@ def loads(value, *, fmt=None, dict_type=dict, aware_datetime=False):
 
 
 def dump(value, fp, *, fmt=FMT_XML, sort_keys=True, skipkeys=False,
-         aware_datetime=False, ctrld={}):
+         aware_datetime=False, esc_pre=None,esc_pos=None, sep_kv=None, indent=None, max_line_len=None, ctrld={}):
     """Write 'value' to a .plist file. 'fp' should be a writable,
     binary file object.
     """
     if fmt not in _FORMATS:
         raise ValueError("Unsupported format: %r"%(fmt,))
 
+    if not CFG.is_init: C = CFG            (q1=esc_pre,q2=esc_pos, sep_kv=sep_kv,indent=indent,max_ll=max_line_len)
+    else              : C = CFG(); C.update(q1=esc_pre,q2=esc_pos, sep_kv=sep_kv,indent=indent,max_ll=max_line_len)
+
     writer = _FORMATS[fmt]["writer"](fp, sort_keys=sort_keys, skipkeys=skipkeys,
                                      aware_datetime=aware_datetime)
-    if ctrld:
-        if isinstance((q1 := ctrld.get('pre',None)), str):
-            if R'\u' in q1.lower(): q1 = q1.encode("raw_unicode_escape").decode("unicode_escape") #converts literal \u00B0 to °
-            if q1 in ctrl_esc_sym: raise ValueError(f"Escape quotes can't be control chars! {repr(q1)} {q1}")
-        if isinstance((q2 := ctrld.get('pos',None)), str):
-            if R'\u' in q2.lower(): q2 = q2.encode("raw_unicode_escape").decode("unicode_escape")
-            if q2 in ctrl_esc_sym: raise ValueError(f"Escape quotes can't be control chars! {repr(q2)} {q2}")
-        if not CFG.is_init: C = CFG(q1,q2)
-        else:
-            C = CFG()
-            if  q1 != C.q1 or \
-                q2 != C.q2: C.update( q1,  q2)
-    else: # restore defaults if previous passed configs changed it
-        C     = CFG()
-        if  _q1    != C.q1 or \
-            _q2    != C.q2: C.update(_q1, _q2)
     writer.write(value)
     if hasattr(writer,'is_ctrl'): ctrld['is_ctrl'] = writer.is_ctrl
     if hasattr(writer,'is_dupe'): ctrld['is_dupe'] = writer.is_dupe
 
 
 def dumps(value, *, fmt=FMT_XML, skipkeys=False, sort_keys=True,
-          aware_datetime=False, ctrld={}):
+          aware_datetime=False, esc_pre=None,esc_pos=None, sep_kv=None, indent=None, max_line_len=None, ctrld={}):
     """Return a bytes object with the contents for a .plist file.
     """
     fp = BytesIO()
     dump(value, fp, fmt=fmt, skipkeys=skipkeys, sort_keys=sort_keys,
-         aware_datetime=aware_datetime, ctrld=ctrld)
+         aware_datetime=aware_datetime, esc_pre=esc_pre,esc_pos=esc_pos, sep_kv=sep_kv, indent=indent, max_line_len=max_line_len, ctrld=ctrld)
     return fp.getvalue()
