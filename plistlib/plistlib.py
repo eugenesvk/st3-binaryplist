@@ -152,27 +152,89 @@ class Singleton(type): # doesn't deadlock: if both Class_1 and Class_2 implement
                     cls   .__shared_instance__ = super(Singleton, cls).__call__(*args, **kwargs)
         return cls.__shared_instance__
 
-_q1='\U000FFFFE' # Use PUA last 2 chars as quotes for special chars
-_q2='\U000FFFFF'
+_q1     = '\U000FFFFE' # Use PUA last 2 chars as quotes for special chars
+_q2     = '\U000FFFFF'
+_indent =b'\t'
+_sep_kv =b''
+_max_ll = 120
+
 class CFG(metaclass=Singleton):
     is_init = False
     # U+  E000–  F8FF  6,400 BMP    Apple uses U+F700–F8FF, just in case use the next SPUA-A
     # U+ F0000– FFFFF 65,536 SPUA-A
 
-    def __init__(self, q1=_q1,q2=_q2):
-        CFG.is_init = True
-        self.q1 = q1
-        self.q2 = q2
+    def __init__(self, q1=None,q2=None, sep_kv=None,indent=None,max_ll=None):
+        CFG.is_init = True  # ↓ converts literal \u00B0 to °
+        if q1     is not None and isinstance(q1    ,str):
+          if R'\u' in q1    .lower() :       q1     =  q1    .encode("raw_unicode_escape").decode("unicode_escape")
+          self       .q1     = q1
+        else: self   .q1     =_q1    ;       q1     = self.q1
+        #                     ↑≝             ↑ avoids self. elsewhere
+        if q2     is not None and isinstance(q2    ,str):
+          if R'\u' in q2    .lower() :       q2     =  q2    .encode("raw_unicode_escape").decode("unicode_escape")
+          self       .q2     = q2
+        else: self   .q2     =_q2    ;       q2     = self.q2
+        if indent is not None and isinstance(indent,str):
+          if  '\\' in indent.lower() :       indent =  indent.encode("raw_unicode_escape").decode("unicode_escape")
+          self       .indent = indent.encode('ascii')
+        else: self   .indent =_indent;       indent = self.indent
+        if sep_kv is not None and isinstance(sep_kv,str):
+          if  '\\' in sep_kv.lower() :       sep_kv =  sep_kv.encode("raw_unicode_escape").decode("unicode_escape")
+          self       .sep_kv = sep_kv.encode('ascii')
+        else: self   .sep_kv =_sep_kv;       sep_kv = self.sep_kv
+        if max_ll is not None and isinstance(max_ll,int):
+          max_ll = max(0,abs(max_ll))
+          self       .max_ll = max_ll
+        else: self   .max_ll =_max_ll;       max_ll = self.max_ll
+        for    q in [q1,q2]:
+            if q in ctrl_esc_sym: raise ValueError(f"Escape quotes can't be control chars! {repr(q)} {q}")
+
         self.esc_comment  = get_esc_comment (q1,q2)
         self.dupe_comment = get_dupe_comment(q1,q2)
         (self.char_rep,self.char_rev) = self.fill_char_replace(q1,q2)
         self.e_cr = f"{q1}␍{q2}" # (incl. in ␍␊) is also escape-encoded due to Sublime Text corrupting mixed newlines
 
-    def update(self, q1=None,q2=None):
-        if isinstance(q1,str): self.q1 =      q1
-        else                 :      q1 = self.q1
-        if isinstance(q2,str): self.q2 =      q2
-        else                 :      q2 = self.q2
+    def update(self, q1=None,q2=None, sep_kv=None,indent=None,max_ll=None):
+        # print(f"update q1=¦{q1}¦{type(q1)}¦ q2=¦{q2}¦{type(q2)}¦ sep_kv=¦{sep_kv}¦{type(sep_kv)}¦ indent=¦{indent}¦{type(indent)}¦ max_ll=¦{max_ll}¦{type(max_ll)}¦)")
+        update_q = False
+        if q1     is not None and isinstance(q1    ,str):
+          if R'\u' in q1    .lower() :       q1     =  q1    .encode("raw_unicode_escape").decode("unicode_escape")
+        else:                                q1     = _q1 # ← reset ≝
+        if q1 != self.q1: self.q1 = q1;      q1     = self.q1; update_q = True
+        if q2     is not None and isinstance(q2    ,str):
+          if R'\u' in q2    .lower() :       q2     =  q2    .encode("raw_unicode_escape").decode("unicode_escape")
+        else:                                q2     = _q2 # ← reset ≝
+        if q2 != self.q2: self.q2 = q2;      q2     = self.q2; update_q = True
+        for    q in [q1,q2]:
+            if q in ctrl_esc_sym: raise ValueError(f"Escape quotes can't be control chars! {repr(q)} {q}")
+        if update_q:
+            self.esc_comment  = get_esc_comment (q1,q2)
+            self.dupe_comment = get_dupe_comment(q1,q2)
+            (self.char_rep,self.char_rev) = self.fill_char_replace(q1,q2)
+            self.e_cr = f"{q1}␍{q2}"
+
+        if indent is not None and isinstance(indent,str):
+          if  '\\' in indent.lower() :       indent =  indent.encode("raw_unicode_escape").decode("unicode_escape")
+          indent                                    =  indent.encode('ascii')
+        else:                                indent = _indent # ← reset ≝
+        if self.indent != indent:       self.indent =  indent; indent = self.indent
+
+        if sep_kv is not None and isinstance(sep_kv,str):
+          if  '\\' in sep_kv.lower() :       sep_kv =  sep_kv.encode("raw_unicode_escape").decode("unicode_escape")
+          sep_kv                                    =  sep_kv.encode('ascii')
+        else:                                sep_kv = _sep_kv # ← reset ≝
+        if self.sep_kv != sep_kv:       self.sep_kv =  sep_kv; sep_kv = self.sep_kv
+
+        if max_ll is not None and isinstance(max_ll,int): max_ll = max(0,abs(max_ll))
+        else:                                             max_ll =_max_ll # ← reset ≝
+        if self.max_ll != max_ll:       self.max_ll =  max_ll; max_ll = self.max_ll
+
+    def reset(self):
+        self.q1       = _q1    ; q1     = _q1
+        self.q2       = _q2    ; q2     = _q2
+        self.sep_kv   = _sep_kv; sep_kv = _sep_kv
+        self.indent   = _indent; indent = _indent
+        self.max_ll   = _max_ll; max_ll = _max_ll
         self.esc_comment  = get_esc_comment (q1,q2)
         self.dupe_comment = get_dupe_comment(q1,q2)
         (self.char_rep,self.char_rev) = self.fill_char_replace(q1,q2)
