@@ -1193,6 +1193,7 @@ def dump(value, fp, *, fmt=FMT_XML, sort_keys=True, skipkeys=False,
     writer.write(value)
     if hasattr(writer,'is_ctrl'): ctrld['is_ctrl'] = writer.is_ctrl
     if hasattr(writer,'is_dupe'): ctrld['is_dupe'] = writer.is_dupe
+    if hasattr(writer,'is_uid' ): ctrld['is_uid' ] = writer.is_uid
 
 
 def dumps(value, *, fmt=FMT_XML, skipkeys=False, sort_keys=True,
