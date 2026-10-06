@@ -121,7 +121,7 @@ class BinaryPlistToggleCommand(TextCommand):
           if not isinstance(sep_kv ,str): sep_kv  = None
           if not isinstance(max_ll ,int): max_ll  = None
 
-          plistlib.dump(pl, fp, fmt=plistlib.FMT_BINARY, esc_pre=esc_pre,esc_pos=esc_pos, indent=indent, sep_kv=sep_kv, max_line_len=max_ll, ctrld=ctrld)
+          plistlib.dump(pl, fp, fmt=plistlib.FMT_BINARY, esc_pre=esc_pre,esc_pos=esc_pos, indent=indent, sep_kv=sep_kv, max_line_len=max_ll, uidict=uidict,q_uid=q_uid, ctrld=ctrld)
       except Exception as e:
         sublime.error_message(str(e))
         raise e
