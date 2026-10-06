@@ -594,6 +594,7 @@ class _PlistWriter(_DumbXMLWriter):
         self.writex("</plist>")
 
     def write_value(self, value):
+        # print(f"_PlistWriter¦write_value T={type(value)}={value}  id={id(value)}  v={value} {' ❗❗❗UID❗❗❗' if isinstance(value,UID) else ''}")
         if isinstance(value, str):
             self.simple_element("string", value)
 
@@ -915,6 +916,7 @@ class _BinaryPlistWriter (object):
         self._q_uid  = CFG().q_uid
 
     def write(self, value):
+        # print(f"_BinaryPlistWriter¦write: {type(value)} {value}")
         if self._uidict and UID.is_xml_esc(value): value = UID.from_xml_unchecked(value) # Convert UID escaped dict with UID to avoid mismatched refs. Test early since UID is a scalar while escaped dict isn't, so needs to be converted before other checks
 
         # Flattened object list:
@@ -1070,6 +1072,7 @@ class _BinaryPlistWriter (object):
             self._fp.write(value)
 
         elif isinstance(value, str):
+            # print(f"writerstr = {value}")
             value = _un_escape(value)
             try:
                 t = value.encode('ascii')
