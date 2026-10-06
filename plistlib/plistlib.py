@@ -1117,7 +1117,7 @@ _FORMATS={
 }
 
 
-def load(fp, *, fmt=None, dict_type=dict, aware_datetime=False):
+def load(fp, *, fmt=None, dict_type=dict, aware_datetime=False, uidict=None,q_uid=None):
     """Read a .plist file. 'fp' should be a readable and binary file object.
     Return the unpacked root object (which usually is a dictionary).
     """
@@ -1135,11 +1135,14 @@ def load(fp, *, fmt=None, dict_type=dict, aware_datetime=False):
     else:
         P = _FORMATS[fmt]['parser']
 
-    p = P(dict_type=dict_type, aware_datetime=aware_datetime)
+    if not CFG.is_init: C = CFG            (uidict=uidict,q_uid=q_uid)
+    else              : C = CFG(); C.update(uidict=uidict,q_uid=q_uid)
+
+    p = P(dict_type=dict_type, aware_datetime=aware_datetime, uidict=uidict,q_uid=q_uid)
     return p.parse(fp)
 
 
-def loads(value, *, fmt=None, dict_type=dict, aware_datetime=False):
+def loads(value, *, fmt=None, dict_type=dict, aware_datetime=False, uidict=None,q_uid=None):
     """Read a .plist file from a bytes object.
     Return the unpacked root object (which usually is a dictionary).
     """
@@ -1149,7 +1152,7 @@ def loads(value, *, fmt=None, dict_type=dict, aware_datetime=False):
                             "FMT_BINARY")
         value = value.encode()
     fp = BytesIO(value)
-    return load(fp, fmt=fmt, dict_type=dict_type, aware_datetime=aware_datetime)
+    return load(fp, fmt=fmt, dict_type=dict_type, aware_datetime=aware_datetime, uidict=uidict,q_uid=q_uid)
 
 
 def dump(value, fp, *, fmt=FMT_XML, sort_keys=True, skipkeys=False,
