@@ -475,12 +475,16 @@ class _PlistParser:
 
     def end_integer(self):
         raw = self.get_data()
-        if not self._uidict and self._q_uid:
-            if raw.startswith(self._q_uid): raw = raw.partition(self._q_uid)[2]
-        if raw.startswith('0x') or raw.startswith('0X'):
-            self.add_object(int(raw, 16))
+        if self._uidict or not self._q_uid:
+            if raw.startswith('0x') or raw.startswith('0X'):
+                self.add_object(int(raw, 16))
+            else:
+                self.add_object(int(raw))
         else:
-            self.add_object(int(raw))
+            if  raw.startswith(self._q_uid): raw = raw.partition(self._q_uid)[2]
+            if  raw.startswith('0x') or\
+                raw.startswith('0X'): self.add_object(UID(int(raw, 16)))
+            else                    : self.add_object(UID(int(raw    )))
 
     def end_real(self):
         self.add_object(float(self.get_data()))
