@@ -112,6 +112,13 @@ class UID:
     def from_xml_unchecked(d):
         return UID(d[UID.xml_key])
 
+    def is_xml_esc_int(i): # tests for '🆔1'
+        return i and isinstance(i,str) and i.startswith(CFG().q_uid) and i.partition(CFG().q_uid)[2].isdigit()
+    def from_xml_int(i): # convert for '🆔1' to 1
+        return i.partition(CFG().q_uid)[2] if UID.is_xml_esc_int(i) else i
+    def from_xml_int_unchecked(i):
+        return i.partition(CFG().q_uid)[2]
+
 #
 # XML support
 #
