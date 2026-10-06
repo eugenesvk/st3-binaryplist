@@ -32,6 +32,7 @@ All notable changes to this project will be documented in this file
   + buggy `UID` support, the Python std library only supported `UID` at the top level(?), not in dictionaries or arrays
   + wrong defaults in user config template
   + corruption on save when settings were changed between load and save. Strictly use configs when the document was loaded
+  + corruption on save when using custom UID escape mode (all ints were saved as UIDs)
 - 🗑️ __Removed__
   - support for older Sublime Text versions due to requires Python 3.14, included since Sublime Text build 4205 (2026-Apr-23)
 
