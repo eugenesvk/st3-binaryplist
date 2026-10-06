@@ -616,11 +616,15 @@ class _PlistWriter(_DumbXMLWriter):
         else:
             self.simple_element("dict")
     def write_uid(self, uid):
-        self.begin_element("dict")
-        self.simple_element("key", UID.xml_key, nl=False)
-        self.write_value(int(uid))
-        self.end_element("dict")
-        # else: self.simple_element("dict") # UID must be a positive int, so no else
+        C = CFG()
+        if C.uidict:
+            self.begin_element("dict")
+            self.simple_element("key", UID.xml_key, nl=False)
+            self.write_value(int(uid))
+            self.end_element("dict")
+            # else: self.simple_element("dict") # UID must be a positive int, so no else
+        else:
+            self.simple_element("integer", f"{C.q_uid}{int(uid)}")
 
     def write_array(self, array):
         if array:
