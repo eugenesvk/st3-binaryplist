@@ -945,6 +945,7 @@ class _BinaryPlistWriter (object):
 
         # Write object list
         for obj in self._objlist:
+            print(f'_write_object: T={type(obj)}={obj}  id={id(obj)}  v={obj}')
             self._write_object(obj)
 
         # Write refnum->object offset table
@@ -967,6 +968,7 @@ class _BinaryPlistWriter (object):
         # First check if the object is in the object table, not used for
         # containers to ensure that two subcontainers with the same contents
         # will be serialized as distinct values.
+        # print(f'T={type(value)} id={id(value)} v=¦{value}¦{' ❗❗❗UID❗❗❗' if is_uid else ''}{' scalar' if isinstance(value,_scalars) else ''}')
         if isinstance(value, _scalars):
             if (type(value), value) in self._objtable:
                 return
@@ -977,10 +979,13 @@ class _BinaryPlistWriter (object):
         # Add to objectreference map
         refnum = len(self._objlist)
         self._objlist.append(value)
+        # print(f"   append to List   : id={id(value)} refnum={refnum} val=¦{value}¦")
         if isinstance(value, _scalars):
             self._objtable[(type(value), value)] = refnum
+            # print(f"   add    to Table  : id={id(value)} refnum={refnum} val=¦{value}¦")
         else:
             self._objidtable[id(value)] = refnum
+            # print(f"   add    to TableID: id={id(value)} refnum={refnum} val=¦{value}¦")
 
         # And finally recurse into containers
         if isinstance(value, dict):
@@ -1025,6 +1030,7 @@ class _BinaryPlistWriter (object):
             self._fp.write(struct.pack('>BBQ', token | 0xF, 0x13, size))
 
     def _write_object(self, value):
+        # print(f'@_write_object: T={type(value)}  id={id(value)}  v={value}')
         ref = self._getrefnum(value)
         self._object_offsets[ref] = self._fp.tell()
         if value is None:
