@@ -23,6 +23,9 @@ All notable changes to this project will be documented in this file
   + supports `UID`
   + support for configuring key/value newline separator, indent char, and max line lenght value
   + user commands to open preferences and changelog
+  + alternative `UID` encoding option for better reading/editing experience (optional, user-customizable prefix):
+    - `<integer>٠123</integer>` instead of
+    - `<dict><key>CF$UID</key><integer>123</integer></dict>`
 - Δ __Changed__
   - slightly denser layout, removes newlines between `key`s and `value`s and increases max line length from 80 to 120
 - 🐞 __Fixed__
