@@ -84,27 +84,18 @@ class BinaryPlistToggleCommand(TextCommand):
     if file_name and file_name != '' and os.path.isfile(file_name) == True:
       bytes = view.substr(Region(0, view.size())).encode('utf-8')
       try:
-        cfg = sublime.load_settings("BinaryPlist.sublime-settings")
-        cfgv= view.settings()
-        uidict    = cfgv.get("BinaryPlist.uidict"      ,cfg.get("uidict"      ,None))
-        q_uid     = cfgv.get("BinaryPlist.q_uid"       ,cfg.get("q_uid"       ,None))
-        if not isinstance(uidict,bool): uidict = None
-        if not isinstance(q_uid ,str ): q_uid  = None
+        cv= view.settings() # only use view settings to avoid config updates corrupting saves with different escapes
+        uidict    = cv.get("𝐁Plist.uidict"      ,None); uidict  = uidict  if isinstance(uidict,bool) else None
+        q_uid     = cv.get("𝐁Plist.q_uid"       ,None); q_uid   = q_uid   if isinstance(q_uid ,str ) else None
 
         pl = plistlib.loads(bytes, fmt=plistlib.FMT_XML, uidict=uidict,q_uid=q_uid)
         with open(file_name, 'wb') as fp:
           ctrld = {}
-          # Load pre/pos values from document's vars in case they were changed after load
-          esc_pre = cfgv.get("BinaryPlist.esc_pre"     ,cfg.get("esc_pre"     ,None))
-          esc_pos = cfgv.get("BinaryPlist.esc_pos"     ,cfg.get("esc_pos"     ,None))
-          indent  = cfgv.get("BinaryPlist.indent"      ,cfg.get("indent"      ,None))
-          sep_kv  = cfgv.get("BinaryPlist.key_val_sep" ,cfg.get("key_val_sep" ,None))
-          max_ll  = cfgv.get("BinaryPlist.max_line_len",cfg.get("max_line_len",None))
-          if not isinstance(esc_pre,str): esc_pre = None
-          if not isinstance(esc_pos,str): esc_pos = None
-          if not isinstance(indent ,str): indent  = None
-          if not isinstance(sep_kv ,str): sep_kv  = None
-          if not isinstance(max_ll ,int): max_ll  = None
+          esc_pre = cv.get("𝐁Plist.esc_pre"     ,None); esc_pre = esc_pre if isinstance(esc_pre,str) else None
+          esc_pos = cv.get("𝐁Plist.esc_pos"     ,None); esc_pos = esc_pos if isinstance(esc_pos,str) else None
+          indent  = cv.get("𝐁Plist.indent"      ,None); indent  = indent  if isinstance(indent ,str) else None
+          sep_kv  = cv.get("𝐁Plist.key_val_sep" ,None); sep_kv  = sep_kv  if isinstance(sep_kv ,str) else None
+          max_ll  = cv.get("𝐁Plist.max_line_len",None); max_ll  = max_ll  if isinstance(max_ll ,int) else None
 
           plistlib.dump(pl, fp, fmt=plistlib.FMT_BINARY, esc_pre=esc_pre,esc_pos=esc_pos, indent=indent, sep_kv=sep_kv, max_line_len=max_ll, uidict=uidict,q_uid=q_uid, ctrld=ctrld)
       except Exception as e:
