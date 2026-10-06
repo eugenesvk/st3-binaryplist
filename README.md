@@ -47,6 +47,9 @@ believe this plugin improves on that one in a few key ways:
 ### Features
   - round-trip of control chars like Backspace  `\x08` by quoting their symbolic representation `␈` in PUA Unicode chars (≝`󿿾␈󿿿` or `uFFFFE` `uFFFFF`, user-configurable)
     - ⚠data loss: arbitrary escaping is NOT supported, so if the source document contains the same escaped control chars used to escape actual control chars, those will be unescaped on save
+  - supports `UID`s with two configurable escape schemes
+    - `<dict><key>CF$UID</key><integer>123</integer></dict>` "dict-escaped" (standard Apple)
+    - `<integer>٠123</integer>` shorter and nicer "prefix-escaped"
 
 ### Configure
 
