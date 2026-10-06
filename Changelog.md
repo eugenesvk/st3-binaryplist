@@ -1,7 +1,7 @@
 # Changelog
 All notable changes to this project will be documented in this file
 
-[unreleased]: https://github.com/eugenesvk/st3-binaryplist/compare/1.0.3005...HEAD
+[unreleased]: https://github.com/eugenesvk/st3-binaryplist/compare/4205-1.0.3006...HEAD
 ## [Unreleased]
 <!-- - ✨ __Added__ -->
   <!-- + new features -->
@@ -16,6 +16,8 @@ All notable changes to this project will be documented in this file
 <!-- - 🔒 __Security__ -->
   <!-- + vulnerabilities -->
 
+[4205-1.0.3006]: https://github.com/eugenesvk/st3-binaryplist/releases/tag/4205-1.0.3006
+## [4205-1.0.3006]
 - 🐞 __Fixed__
   + buggy `UID` support, the Python std library only supported `UID` at the top level(?), not in dictionaries or arrays
 
