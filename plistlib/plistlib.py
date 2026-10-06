@@ -381,12 +381,14 @@ def _un_escape(text):
     return text
 
 class _PlistParser:
-    def __init__(self, dict_type, aware_datetime=False):
+    def __init__(self, dict_type, aware_datetime=False, uidict=None,q_uid=None):
         self.stack = []
         self.current_key = None
         self.root = None
         self._dict_type = dict_type
         self._aware_datetime = aware_datetime
+        self._uidict = uidict
+        self._q_uid  = q_uid
 
     def parse(self, fileobj):
         self.parser = ParserCreate()
@@ -473,6 +475,8 @@ class _PlistParser:
 
     def end_integer(self):
         raw = self.get_data()
+        if not self._uidict:
+            if raw.startswith(self._q_uid): raw = raw.partition(self._q_uid)[2]
         if raw.startswith('0x') or raw.startswith('0X'):
             self.add_object(int(raw, 16))
         else:
@@ -693,7 +697,7 @@ class _BinaryPlistParser:
 
     see also: http://opensource.apple.com/source/CF/CF-744.18/CFBinaryPList.c
     """
-    def __init__(self, dict_type, aware_datetime=False):
+    def __init__(self, dict_type, aware_datetime=False, uidict=None,q_uid=None):
         self._dict_type = dict_type
         self._aware_datime = aware_datetime
 
