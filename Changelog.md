@@ -25,6 +25,9 @@ All notable changes to this project will be documented in this file
   + user commands to open preferences and changelog
 - Δ __Changed__
   - slightly denser layout, removes newlines between `key`s and `value`s and increases max line length from 80 to 120
+- 🐞 __Fixed__
+  + buggy `UID` support, the Python std library only supported `UID` at the top level(?), not in dictionaries or arrays
+  + wrong defaults in user config template
 - 🗑️ __Removed__
   - support for older Sublime Text versions due to requires Python 3.14, included since Sublime Text build 4205 (2026-Apr-23)
 
