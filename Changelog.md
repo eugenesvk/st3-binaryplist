@@ -1,7 +1,7 @@
 # Changelog
 All notable changes to this project will be documented in this file
 
-[unreleased]: https://github.com/eugenesvk/st3-binaryplist/compare/4205-1.0.3008...HEAD
+[unreleased]: https://github.com/eugenesvk/st3-binaryplist/compare/4205-1.0.3009...HEAD
 ## [Unreleased]
 <!-- - ✨ __Added__ -->
   <!-- + new features -->
@@ -16,6 +16,8 @@ All notable changes to this project will be documented in this file
 <!-- - 🔒 __Security__ -->
   <!-- + vulnerabilities -->
 
+[4205-1.0.3009]: https://github.com/eugenesvk/st3-binaryplist/releases/tag/4205-1.0.3009
+## [4205-1.0.3009]
 - 🐞 __Fixed__
   + corruption on save when using custom UID escape mode (all ints were saved as UIDs)
 
