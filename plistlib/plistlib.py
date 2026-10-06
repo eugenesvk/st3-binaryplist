@@ -866,9 +866,11 @@ class _BinaryPlistWriter (object):
         self._sort_keys = sort_keys
         self._skipkeys = skipkeys
         self._aware_datetime = aware_datetime
+        self._uidict = CFG().uidict
+        self._q_uid  = CFG().q_uid
 
     def write(self, value):
-        if value and UID.is_xml_esc(value): value = UID.from_xml_unchecked(value) # Convert UID escaped dict with UID to avoid mismatched refs. Test early since UID is a scalar while escaped dict isn't, so needs to be converted before other checks
+        if self._uidict and UID.is_xml_esc(value): value = UID.from_xml_unchecked(value) # Convert UID escaped dict with UID to avoid mismatched refs. Test early since UID is a scalar while escaped dict isn't, so needs to be converted before other checks
 
         # Flattened object list:
         self._objlist = []
@@ -914,7 +916,7 @@ class _BinaryPlistWriter (object):
         self._fp.write(struct.pack('>5xBBBQQQ', *trailer))
 
     def _flatten(self, value):
-        if UID.is_xml_esc(value): value = UID.from_xml_unchecked(value) # Convert UID escaped dict with UID to avoid mismatched refs. Test early since UID is a scalar while escaped dict isn't, so needs to be converted before other checks
+        if self._uidict and UID.is_xml_esc(value): value = UID.from_xml_unchecked(value) # Convert UID escaped dict with UID to avoid mismatched refs. Test early since UID is a scalar while escaped dict isn't, so needs to be converted before other checks
         # First check if the object is in the object table, not used for
         # containers to ensure that two subcontainers with the same contents
         # will be serialized as distinct values.
@@ -1048,7 +1050,7 @@ class _BinaryPlistWriter (object):
                 raise OverflowError(value)
 
         elif isinstance(value, (list, tuple)):
-            refs = [self._getrefnum(UID.from_xml_unchecked(o) if UID.is_xml_esc(o) else o) for o in value]
+            refs = [self._getrefnum(UID.from_xml_unchecked(o) if self._uidict and UID.is_xml_esc(o) else o) for o in value]
             s = len(refs)
             self._write_size(0xA0, s)
             self._fp.write(struct.pack('>' + self._ref_format * s, *refs))
@@ -1065,7 +1067,7 @@ class _BinaryPlistWriter (object):
                     if self._skipkeys:
                         continue
                     raise TypeError("keys must be strings")
-                if UID.is_xml_esc(v): v = UID.from_xml_unchecked(v)
+                if self._uidict and UID.is_xml_esc(v): v = UID.from_xml_unchecked(v)
                 keyRefs.append(self._getrefnum(k))
                 valRefs.append(self._getrefnum(v))
 
