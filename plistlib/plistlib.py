@@ -492,10 +492,11 @@ class _PlistParser:
             else:
                 self.add_object(int(raw))
         else:
-            if  raw.startswith(self._q_uid): raw = raw.partition(self._q_uid)[2]
+            is_uid = False
+            if  raw.startswith(self._q_uid): is_uid = True; raw = raw.partition(self._q_uid)[2]
             if  raw.startswith('0x') or\
-                raw.startswith('0X'): self.add_object(UID(int(raw, 16)))
-            else                    : self.add_object(UID(int(raw    )))
+                raw.startswith('0X'): self.add_object(UID(int(raw, 16)) if is_uid else int(raw, 16))
+            else                    : self.add_object(UID(int(raw    )) if is_uid else int(raw    ))
 
     def end_real(self):
         self.add_object(float(self.get_data()))
