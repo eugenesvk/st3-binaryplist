@@ -165,13 +165,15 @@ _q2     = '\U000FFFFF'
 _indent =b'\t'
 _sep_kv =b''
 _max_ll = 120
+_uidict = True
+_q_uid  = '🆔'
 
 class CFG(metaclass=Singleton):
     is_init = False
     # U+  E000–  F8FF  6,400 BMP    Apple uses U+F700–F8FF, just in case use the next SPUA-A
     # U+ F0000– FFFFF 65,536 SPUA-A
 
-    def __init__(self, q1=None,q2=None, sep_kv=None,indent=None,max_ll=None):
+    def __init__(self, q1=None,q2=None, sep_kv=None,indent=None,max_ll=None, uidict=None,q_uid=None):
         CFG.is_init = True  # ↓ converts literal \u00B0 to °
         if q1     is not None and isinstance(q1    ,str):
           if R'\u' in q1    .lower() :       q1     =  q1    .encode("raw_unicode_escape").decode("unicode_escape")
@@ -194,6 +196,13 @@ class CFG(metaclass=Singleton):
           max_ll = max(0,abs(max_ll))
           self       .max_ll = max_ll
         else: self   .max_ll =_max_ll;       max_ll = self.max_ll
+        if uidict is not None and isinstance(uidict,bool):
+          self       .uidict = uidict
+        else: self   .uidict =_uidict;       uidict = self.uidict
+        if q_uid  is not None and isinstance(q_uid ,str):
+          if  '\\' in q_uid .lower() :       q_uid  =  q_uid .encode("raw_unicode_escape").decode("unicode_escape")
+          self       .q_uid  = q_uid
+        else: self   .q_uid  =_q_uid ;       q_uid  = self.q_uid
         for    q in [q1,q2]:
             if q in ctrl_esc_sym: raise ValueError(f"Escape quotes can't be control chars! {repr(q)} {q}")
 
@@ -202,7 +211,7 @@ class CFG(metaclass=Singleton):
         (self.char_rep,self.char_rev) = self.fill_char_replace(q1,q2)
         self.e_cr = f"{q1}␍{q2}" # (incl. in ␍␊) is also escape-encoded due to Sublime Text corrupting mixed newlines
 
-    def update(self, q1=None,q2=None, sep_kv=None,indent=None,max_ll=None):
+    def update(self, q1=None,q2=None, sep_kv=None,indent=None,max_ll=None, uidict=None,q_uid=None):
         update_q = False
         if q1     is not None and isinstance(q1    ,str):
           if R'\u' in q1    .lower() :       q1     =  q1    .encode("raw_unicode_escape").decode("unicode_escape")
@@ -236,12 +245,23 @@ class CFG(metaclass=Singleton):
         else:                                             max_ll =_max_ll # ← reset ≝
         if self.max_ll != max_ll:       self.max_ll =  max_ll
 
+        if uidict is not None and isinstance(uidict,bool): pass
+        else:                                             uidict =_uidict # ← reset ≝
+        if self.uidict != uidict:       self.uidict =  uidict
+
+        if q_uid  is not None and isinstance(q_uid ,str):
+          if  '\\' in q_uid .lower() :       q_uid  =  q_uid .encode("raw_unicode_escape").decode("unicode_escape")
+        else:                                q_uid  = _q_uid  # ← reset ≝
+        if self.q_uid  != q_uid :       self.q_uid  =  q_uid
+
     def reset(self):
         self.q1       = _q1
         self.q2       = _q2
         self.sep_kv   = _sep_kv
         self.indent   = _indent
         self.max_ll   = _max_ll
+        self.uidict   = _uidict
+        self.q_uid    = _q_uid
         q1 = self.q1
         q2 = self.q2
         self.esc_comment  = get_esc_comment (q1,q2)
@@ -1116,15 +1136,15 @@ def loads(value, *, fmt=None, dict_type=dict, aware_datetime=False):
 
 
 def dump(value, fp, *, fmt=FMT_XML, sort_keys=True, skipkeys=False,
-         aware_datetime=False, esc_pre=None,esc_pos=None, sep_kv=None, indent=None, max_line_len=None, ctrld={}):
+         aware_datetime=False, esc_pre=None,esc_pos=None, sep_kv=None, indent=None, max_line_len=None, uidict=None,q_uid=None, ctrld={}):
     """Write 'value' to a .plist file. 'fp' should be a writable,
     binary file object.
     """
     if fmt not in _FORMATS:
         raise ValueError("Unsupported format: %r"%(fmt,))
 
-    if not CFG.is_init: C = CFG            (q1=esc_pre,q2=esc_pos, sep_kv=sep_kv,indent=indent,max_ll=max_line_len)
-    else              : C = CFG(); C.update(q1=esc_pre,q2=esc_pos, sep_kv=sep_kv,indent=indent,max_ll=max_line_len)
+    if not CFG.is_init: C = CFG            (q1=esc_pre,q2=esc_pos, sep_kv=sep_kv,indent=indent,max_ll=max_line_len,uidict=uidict,q_uid=q_uid)
+    else              : C = CFG(); C.update(q1=esc_pre,q2=esc_pos, sep_kv=sep_kv,indent=indent,max_ll=max_line_len,uidict=uidict,q_uid=q_uid)
 
     writer = _FORMATS[fmt]["writer"](fp, sort_keys=sort_keys, skipkeys=skipkeys,
                                      aware_datetime=aware_datetime)
@@ -1134,10 +1154,10 @@ def dump(value, fp, *, fmt=FMT_XML, sort_keys=True, skipkeys=False,
 
 
 def dumps(value, *, fmt=FMT_XML, skipkeys=False, sort_keys=True,
-          aware_datetime=False, esc_pre=None,esc_pos=None, sep_kv=None, indent=None, max_line_len=None, ctrld={}):
+          aware_datetime=False, esc_pre=None,esc_pos=None, sep_kv=None, indent=None, max_line_len=None, uidict=None,q_uid=None, ctrld={}):
     """Return a bytes object with the contents for a .plist file.
     """
     fp = BytesIO()
     dump(value, fp, fmt=fmt, skipkeys=skipkeys, sort_keys=sort_keys,
-         aware_datetime=aware_datetime, esc_pre=esc_pre,esc_pos=esc_pos, sep_kv=sep_kv, indent=indent, max_line_len=max_line_len, ctrld=ctrld)
+         aware_datetime=aware_datetime, esc_pre=esc_pre,esc_pos=esc_pos, sep_kv=sep_kv, indent=indent, max_line_len=max_line_len, uidict=uidict,q_uid=q_uid, ctrld=ctrld)
     return fp.getvalue()
