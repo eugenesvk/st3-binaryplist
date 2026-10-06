@@ -223,6 +223,7 @@ class CFG(metaclass=Singleton):
         self.e_cr = f"{q1}␍{q2}" # (incl. in ␍␊) is also escape-encoded due to Sublime Text corrupting mixed newlines
 
     def update(self, q1=None,q2=None, sep_kv=None,indent=None,max_ll=None, uidict=None,q_uid=None):
+        # print(f"update q1=¦{q1}¦{type(q1)}¦ q2=¦{q2}¦{type(q2)}¦ sep_kv=¦{sep_kv}¦{type(sep_kv)}¦ indent=¦{indent}¦{type(indent)}¦ max_ll=¦{max_ll}¦{type(max_ll)}¦)")
         update_q = False
         update_q2 = False
         if q1     is not None and isinstance(q1    ,str):
@@ -374,6 +375,8 @@ def _escape(text, is_ctrl, is_dupe):
         if not is_ctrl: is_ctrl = True
         for    hex,esc in C.char_rep.items(): #\x07 :  ‹␇›  (escape-quoted)
             if hex in text: text = text.replace(hex,esc)
+    # if "\r\n" in text: print(f"READ: replacing ␍␤ e_crln |{text}|")
+    # if "\r"   in text: print(f"READ: replacing ␍  e_cr   |{text}|")
     # text = text.replace("\r\n",e_crln ) # escape DOS line endings
     if not is_dupe and C.e_cr in text: is_dupe = True
     if not is_ctrl and "\r" in text: is_ctrl = True
@@ -386,7 +389,11 @@ def _un_escape(text):
     C = CFG()
     if _c_char_rev_pat.search(text):
         for  esc,hex in C.char_rev.items(): #‹␇›  (escape-quoted) : \x07
-            if esc in text: text = text.replace(esc,hex)
+            if esc in text:
+                text = text.replace(esc,hex)
+                # print(f"WRITE: repl {esc}→{hex} in |{text}|")
+    # if e_crln in text: print("WRITE: replacing ␍␤ e_crln")
+    # if e_cr   in text: print("WRITE: replacing ␍  e_cr"  )
     # text = text.replace(e_crln,"\r\n")
     text = text.replace(C.e_cr  ,"\r"  )
     return text
