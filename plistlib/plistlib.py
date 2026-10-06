@@ -568,7 +568,7 @@ class _PlistWriter(_DumbXMLWriter):
 
         elif isinstance(value, (tuple, list)):
             self.write_array(value)
-
+        elif isinstance(value,UID): self.write_uid(value)
         else:
             raise TypeError("unsupported type: %s" % type(value))
 
@@ -600,6 +600,12 @@ class _PlistWriter(_DumbXMLWriter):
 
         else:
             self.simple_element("dict")
+    def write_uid(self, uid):
+        self.begin_element("dict")
+        self.simple_element("key", UID.xml_key, nl=False)
+        self.write_value(int(uid))
+        self.end_element("dict")
+        # else: self.simple_element("dict") # UID must be a positive int, so no else
 
     def write_array(self, array):
         if array:
