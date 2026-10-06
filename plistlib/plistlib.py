@@ -381,14 +381,14 @@ def _un_escape(text):
     return text
 
 class _PlistParser:
-    def __init__(self, dict_type, aware_datetime=False, uidict=None,q_uid=None):
+    def __init__(self, dict_type, aware_datetime=False):
         self.stack = []
         self.current_key = None
         self.root = None
         self._dict_type = dict_type
         self._aware_datetime = aware_datetime
-        self._uidict = uidict
-        self._q_uid  = q_uid
+        self._uidict = CFG().uidict
+        self._q_uid  = CFG().q_uid
 
     def parse(self, fileobj):
         self.parser = ParserCreate()
@@ -1138,7 +1138,7 @@ def load(fp, *, fmt=None, dict_type=dict, aware_datetime=False, uidict=None,q_ui
     if not CFG.is_init: C = CFG            (uidict=uidict,q_uid=q_uid)
     else              : C = CFG(); C.update(uidict=uidict,q_uid=q_uid)
 
-    p = P(dict_type=dict_type, aware_datetime=aware_datetime, uidict=uidict,q_uid=q_uid)
+    p = P(dict_type=dict_type, aware_datetime=aware_datetime)
     return p.parse(fp)
 
 
