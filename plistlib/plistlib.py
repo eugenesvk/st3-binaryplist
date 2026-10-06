@@ -136,14 +136,14 @@ ctrl_esc_sym = { # Dictionary matching control chars to their escape symbols (un
     '\x1a':'␚','\x1b':'␛','\x1c':'␜','\x1d':'␝','\x1e':'␞', '\x1f':'␟',
     '\x7f':'␡', # technically not a control char
 }
-def get_esc_comment(q1=str,q2=str):
+def get_esc_comment(q1,q2):
     return f"""
 <!-- Control chars u0–u1f + u1f (∑30 excluding ␉u9 ␊uA ␍uD) are escape-encoded:
   • by 'quoting' {q1}⎀{q2} in {repr(q1)} and {repr(q2)}
   • their symbolic ⎀ representation: ␀␁␂␃␄␅␆␇␈␋␌␎␏␐␑␒␓␔␕␖␗␘␙␚␛␜␝␞␟ ␡, for example: Delete  is {q1}␡{q2}
   ␍ (incl. in ␍␊) is also escape-encoded until Sublime Text fixes its bug of corrupting mixed newlines (upvote github.com/sublimehq/sublime_text/issues/182) -->
 """
-def get_dupe_comment(q1=str,q2=str):
+def get_dupe_comment(q1,q2):
     return f"""
 <!-- ⚠data loss: the source document contains the same escaped control chars used to escape actual control chars, for example:
   • Delete  is escaped as {q1}␡{q2}, but this escaped form was already present
