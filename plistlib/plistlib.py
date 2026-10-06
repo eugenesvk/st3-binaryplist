@@ -224,24 +224,26 @@ class CFG(metaclass=Singleton):
           if  '\\' in indent.lower() :       indent =  indent.encode("raw_unicode_escape").decode("unicode_escape")
           indent                                    =  indent.encode('ascii')
         else:                                indent = _indent # ← reset ≝
-        if self.indent != indent:       self.indent =  indent; indent = self.indent
+        if self.indent != indent:       self.indent =  indent
 
         if sep_kv is not None and isinstance(sep_kv,str):
           if  '\\' in sep_kv.lower() :       sep_kv =  sep_kv.encode("raw_unicode_escape").decode("unicode_escape")
           sep_kv                                    =  sep_kv.encode('ascii')
         else:                                sep_kv = _sep_kv # ← reset ≝
-        if self.sep_kv != sep_kv:       self.sep_kv =  sep_kv; sep_kv = self.sep_kv
+        if self.sep_kv != sep_kv:       self.sep_kv =  sep_kv
 
         if max_ll is not None and isinstance(max_ll,int): max_ll = max(0,abs(max_ll))
         else:                                             max_ll =_max_ll # ← reset ≝
-        if self.max_ll != max_ll:       self.max_ll =  max_ll; max_ll = self.max_ll
+        if self.max_ll != max_ll:       self.max_ll =  max_ll
 
     def reset(self):
-        self.q1       = _q1    ; q1     = _q1
-        self.q2       = _q2    ; q2     = _q2
-        self.sep_kv   = _sep_kv; sep_kv = _sep_kv
-        self.indent   = _indent; indent = _indent
-        self.max_ll   = _max_ll; max_ll = _max_ll
+        self.q1       = _q1
+        self.q2       = _q2
+        self.sep_kv   = _sep_kv
+        self.indent   = _indent
+        self.max_ll   = _max_ll
+        q1 = self.q1
+        q2 = self.q2
         self.esc_comment  = get_esc_comment (q1,q2)
         self.dupe_comment = get_dupe_comment(q1,q2)
         (self.char_rep,self.char_rev) = self.fill_char_replace(q1,q2)
