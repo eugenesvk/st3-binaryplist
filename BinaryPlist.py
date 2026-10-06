@@ -70,7 +70,10 @@ class BinaryPlistToggleCommand(TextCommand):
 
       full_text = plistlib.dumps(pl,esc_pre=esc_pre,esc_pos=esc_pos, indent=indent, sep_kv=sep_kv, max_line_len=max_ll, uidict=uidict,q_uid=q_uid, ctrld=ctrld).decode('utf-8')
       msg_status = '⇩Binary PList'
-      if ctrld.get('is_ctrl',False): msg_status += " with ❗␛Controls, see end of file…"
+      msg_extra = []
+      if ctrld.get('is_ctrl',False): msg_extra += ["␛Controls"]
+      if ctrld.get('is_uid' ,False): msg_extra += ["u🆔"]
+      if msg_extra: msg_status += " with ❗" + " ".join(msg_extra) + ", see end of file…"
       if ctrld.get('is_dupe',False) and is_warn: sublime.message_dialog("This file contains the same escaped control chars used to escape actual control chars!\n\nIf you save the file, these replacement chars will be unescaped and thus lost!")
       # print("view.size()={0}".format(view.size()))
       view.replace (edit, Region(0, view.size()), full_text)
