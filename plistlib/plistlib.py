@@ -150,6 +150,8 @@ def get_dupe_comment(q1,q2):
   Saving the file will convert {q1}␡{q2} back to Delete  even if nothing was escaped, leading to a data loss❗
   Workaround: use alternative escape quotes in plugin settings -->
 """
+def get_uid_comment(q):
+    return f"""<!-- UIDs are escape-encoded by prefixing {q}⎀ with {repr(q)} -->"""
 
 import threading
 class Singleton(type): # doesn't deadlock: if both Class_1 and Class_2 implement old singleton pattern, calling the constructor of Class_1 in Class_2 (or vice versa) would dead-lock since all the classes implemented through that meta-class share the same lock
@@ -210,16 +212,18 @@ class CFG(metaclass=Singleton):
           if  '\\' in q_uid .lower() :       q_uid  =  q_uid .encode("raw_unicode_escape").decode("unicode_escape")
           self       .q_uid  = q_uid
         else: self   .q_uid  =_q_uid ;       q_uid  = self.q_uid
-        for    q in [q1,q2]:
+        for    q in [q1,q2,q_uid]:
             if q in ctrl_esc_sym: raise ValueError(f"Escape quotes can't be control chars! {repr(q)} {q}")
 
         self.esc_comment  = get_esc_comment (q1,q2)
         self.dupe_comment = get_dupe_comment(q1,q2)
+        self.uid_comment  = get_uid_comment (q_uid)
         (self.char_rep,self.char_rev) = self.fill_char_replace(q1,q2)
         self.e_cr = f"{q1}␍{q2}" # (incl. in ␍␊) is also escape-encoded due to Sublime Text corrupting mixed newlines
 
     def update(self, q1=None,q2=None, sep_kv=None,indent=None,max_ll=None, uidict=None,q_uid=None):
         update_q = False
+        update_q2 = False
         if q1     is not None and isinstance(q1    ,str):
           if R'\u' in q1    .lower() :       q1     =  q1    .encode("raw_unicode_escape").decode("unicode_escape")
         else:                                q1     = _q1 # ← reset ≝
@@ -228,13 +232,20 @@ class CFG(metaclass=Singleton):
           if R'\u' in q2    .lower() :       q2     =  q2    .encode("raw_unicode_escape").decode("unicode_escape")
         else:                                q2     = _q2 # ← reset ≝
         if q2 != self.q2: self.q2 = q2;      q2     = self.q2; update_q = True
-        for    q in [q1,q2]:
+
+        if q_uid  is not None and isinstance(q_uid ,str):
+          if  '\\' in q_uid .lower() :       q_uid  =  q_uid .encode("raw_unicode_escape").decode("unicode_escape")
+        else:                                q_uid  = _q_uid  # ← reset ≝
+        if self.q_uid  != q_uid :       self.q_uid  =  q_uid; update_q2 = True
+        for    q in [q1,q2,q_uid]:
             if q in ctrl_esc_sym: raise ValueError(f"Escape quotes can't be control chars! {repr(q)} {q}")
         if update_q:
             self.esc_comment  = get_esc_comment (q1,q2)
             self.dupe_comment = get_dupe_comment(q1,q2)
             (self.char_rep,self.char_rev) = self.fill_char_replace(q1,q2)
             self.e_cr = f"{q1}␍{q2}"
+        if update_q2:
+            self.uid_comment  = get_uid_comment (q_uid)
 
         if indent is not None and isinstance(indent,str):
           if  '\\' in indent.lower() :       indent =  indent.encode("raw_unicode_escape").decode("unicode_escape")
@@ -256,11 +267,6 @@ class CFG(metaclass=Singleton):
         else:                                             uidict =_uidict # ← reset ≝
         if self.uidict != uidict:       self.uidict =  uidict
 
-        if q_uid  is not None and isinstance(q_uid ,str):
-          if  '\\' in q_uid .lower() :       q_uid  =  q_uid .encode("raw_unicode_escape").decode("unicode_escape")
-        else:                                q_uid  = _q_uid  # ← reset ≝
-        if self.q_uid  != q_uid :       self.q_uid  =  q_uid
-
     def reset(self):
         self.q1       = _q1
         self.q2       = _q2
@@ -271,8 +277,10 @@ class CFG(metaclass=Singleton):
         self.q_uid    = _q_uid
         q1 = self.q1
         q2 = self.q2
+        q_uid = self.q_uid
         self.esc_comment  = get_esc_comment (q1,q2)
         self.dupe_comment = get_dupe_comment(q1,q2)
+        self.uid_comment  = get_uid_comment (q_uid)
         (self.char_rep,self.char_rev) = self.fill_char_replace(q1,q2)
         self.e_cr = f"{q1}␍{q2}"
 
@@ -507,8 +515,11 @@ class _DumbXMLWriter:
         self._indent_level = indent_level
         self.indent = CFG().indent if indent is None else indent # "\t" todo: why is _PlistWriter b"\t"
         self.is_ctrl = False # signal when control chars are found
+        self.is_uid  = False # signal when UIDs are id-escaped
         self.is_dupe = False # warn when escaped sequence is already in the text
         self.sep_kv = CFG().sep_kv
+        self.uidict = CFG().uidict
+        self.q_uid  = CFG().q_uid
 
     def begin_element(self, element):
         self.stack.append(element)
@@ -523,6 +534,9 @@ class _DumbXMLWriter:
 
     def simple_element(self, element, value=None, nl=True):
         if value is not None:
+            if not self.is_uid and not self.uidict:                 # int can be UID
+                if element == "integer" and isinstance(value,str):  # …
+                    if self.q_uid and value.startswith(self.q_uid): self.is_uid = True
             (value,is_ctrl,is_dupe) = _escape(value,self.is_ctrl,self.is_dupe)
             if not self.is_ctrl and is_ctrl: self.is_ctrl = True
             if not self.is_dupe and is_dupe: self.is_dupe = True
@@ -564,6 +578,7 @@ class _PlistWriter(_DumbXMLWriter):
         self.writeln("<plist version=\"1.0\">")
         self.write_value(value)
         if self.is_ctrl: self.writex(C.esc_comment) # can't add at the top since haven't parsed values yet
+        if self.is_uid: self.writex(C.uid_comment)
         if self.is_dupe: self.writex(C.dupe_comment)
         self.writex("</plist>")
 
