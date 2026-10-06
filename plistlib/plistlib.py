@@ -78,6 +78,7 @@ globals().update(PlistFormat.__members__)
 _MIN_READ_BUF_SIZE = 1 << 20
 
 class UID:
+    xml_key = 'CF$UID'
     def __init__(self, data):
         if not isinstance(data, int):
             raise TypeError("data must be an int")
@@ -103,6 +104,13 @@ class UID:
 
     def __hash__(self):
         return hash(self.data)
+
+    def is_xml_esc(d): # tests for {'CF$UID':1}, not full validity, just basics to avoid {'CF$UID':'str'}, so {'CF$UID':-1} should be considered an attempt to create an invalid UID
+        return d and isinstance(d,dict) and len(d) == 1 and UID.xml_key in d and isinstance(d[UID.xml_key],int)
+    def from_xml(d): # convert {'CF$UID':1} into UID(1)
+        return UID(d[UID.xml_key]) if UID.is_xml_esc(d) else d
+    def from_xml_unchecked(d):
+        return UID(d[UID.xml_key])
 
 #
 # XML support
