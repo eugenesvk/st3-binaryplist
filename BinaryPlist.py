@@ -58,30 +58,15 @@ class BinaryPlistToggleCommand(TextCommand):
         pl = plistlib.load(fp)
       ctrld = {}
       cfg = sublime.load_settings("BinaryPlist.sublime-settings")
-      cfgv= view.settings()
-      # Save pre/pos values to document's vars so that you can't change them after load
-      esc_pre= cfg.get("esc_pre"     ,None)
-      esc_pos= cfg.get("esc_pos"     ,None)
-      indent = cfg.get("indent"      ,None)
-      sep_kv = cfg.get("key_val_sep" ,None)
-      max_ll = cfg.get("max_line_len",None)
-      uidict = cfg.get("uidict"      ,None)
-      q_uid  = cfg.get("q_uid"       ,None)
-      if isinstance(esc_pre,str): cfgv.set('BinaryPlist.esc_pre'    ,esc_pre)
-      else                      : esc_pre = None
-      if isinstance(esc_pos,str): cfgv.set('BinaryPlist.esc_pos'    ,esc_pos)
-      else                      : esc_pos = None
-      if isinstance(indent ,str): cfgv.set('BinaryPlist.indent'     ,indent)
-      else                      : indent  = None
-      if isinstance(sep_kv ,str): cfgv.set('BinaryPlist.key_val_sep',sep_kv)
-      else                      : sep_kv  = None
-      if isinstance(max_ll ,int): cfgv.set('BinaryPlist.max_line_len',max_ll)
-      else                      : max_ll  = None
-      if isinstance(uidict,bool): cfgv.set('BinaryPlist.uidict'      ,uidict)
-      else                      : uidict  = None
-      if isinstance(q_uid  ,str): cfgv.set('BinaryPlist.q_uid'       ,q_uid)
-      else                      : q_uid  = None
-      is_warn = cfg.get("warn_dupe",True)
+      cv= view.settings() # Save pre/pos values to document's vars so that you can't change them after load and corrupt on save
+      esc_pre= cfg.get("esc_pre"     ,None); esc_pre=esc_pre if isinstance(esc_pre,str) else None; cv.set('𝐁Plist.esc_pre'    ,esc_pre)
+      esc_pos= cfg.get("esc_pos"     ,None); esc_pos=esc_pos if isinstance(esc_pos,str) else None; cv.set('𝐁Plist.esc_pos'    ,esc_pos)
+      indent = cfg.get("indent"      ,None); indent =indent  if isinstance(indent ,str) else None; cv.set('𝐁Plist.indent'     ,indent)
+      sep_kv = cfg.get("key_val_sep" ,None); sep_kv =sep_kv  if isinstance(sep_kv ,str) else None; cv.set('𝐁Plist.key_val_sep',sep_kv)
+      max_ll = cfg.get("max_line_len",None); max_ll =max_ll  if isinstance(max_ll ,int) else None; cv.set('𝐁Plist.max_line_len',max_ll)
+      uidict = cfg.get("uidict"      ,None); uidict =uidict  if isinstance(uidict,bool) else None; cv.set('𝐁Plist.uidict'      ,uidict)
+      q_uid  = cfg.get("q_uid"       ,None); q_uid  =q_uid   if isinstance(q_uid  ,str) else None; cv.set('𝐁Plist.q_uid'       ,q_uid)
+      is_warn= cfg.get("warn_dupe",True)
 
       full_text = plistlib.dumps(pl,esc_pre=esc_pre,esc_pos=esc_pos, indent=indent, sep_kv=sep_kv, max_line_len=max_ll, uidict=uidict,q_uid=q_uid, ctrld=ctrld).decode('utf-8')
       msg_status = '⇩Binary PList'
