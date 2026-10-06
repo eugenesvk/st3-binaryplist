@@ -13,7 +13,7 @@
 // "key_val_sep" :""   ,//≝''   denser view with key/value in 1 line, or use newline '\n'
 // "max_line_len": 120,//≝120
 
-// "uidict": true,//≝true escape UIDs as dictionaries with 'CF$UID' key (Apple's default method) or inject a 'q_uid' prefix quote into the ingeger field itself
+// "uidict": true,//≝true escape UIDs as dictionaries with 'CF$UID' key (Apple's default method) or inject a 'q_uid' prefix quote into the integer field itself
 // "q_uid" :"٠"  ,//≝٠  if 'uidict' is false.  alt numeric: ۰𑛀𑁦𑇐 𖭐 🯰 𝟶 𝟘 ႕ 𑶡 ୮ 𑄺 ૪ ୪ ౪ ൧ ൫ ௫    str: 🆔 (errors syntax highlights)
 
 // "warn_dupe":true, // Show a warning dialog window if the source document contains the same escaped control chars used to escape actual control chars
