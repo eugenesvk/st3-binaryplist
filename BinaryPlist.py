@@ -65,6 +65,8 @@ class BinaryPlistToggleCommand(TextCommand):
       indent = cfg.get("indent"      ,None)
       sep_kv = cfg.get("key_val_sep" ,None)
       max_ll = cfg.get("max_line_len",None)
+      uidict = cfg.get("uidict"      ,None)
+      q_uid  = cfg.get("q_uid"       ,None)
       if isinstance(esc_pre,str): cfgv.set('BinaryPlist.esc_pre'    ,esc_pre)
       else                      : esc_pre = None
       if isinstance(esc_pos,str): cfgv.set('BinaryPlist.esc_pos'    ,esc_pos)
@@ -75,9 +77,13 @@ class BinaryPlistToggleCommand(TextCommand):
       else                      : sep_kv  = None
       if isinstance(max_ll ,int): cfgv.set('BinaryPlist.max_line_len',max_ll)
       else                      : max_ll  = None
+      if isinstance(uidict,bool): cfgv.set('BinaryPlist.uidict'      ,uidict)
+      else                      : uidict  = None
+      if isinstance(q_uid  ,str): cfgv.set('BinaryPlist.q_uid'       ,q_uid)
+      else                      : q_uid  = None
       is_warn = cfg.get("warn_dupe",True)
 
-      full_text = plistlib.dumps(pl,esc_pre=esc_pre,esc_pos=esc_pos, indent=indent, sep_kv=sep_kv, max_line_len=max_ll, ctrld=ctrld).decode('utf-8')
+      full_text = plistlib.dumps(pl,esc_pre=esc_pre,esc_pos=esc_pos, indent=indent, sep_kv=sep_kv, max_line_len=max_ll, uidict=uidict,q_uid=q_uid, ctrld=ctrld).decode('utf-8')
       msg_status = '⇩Binary PList'
       if ctrld.get('is_ctrl',False): msg_status += " with ❗␛Controls, see end of file…"
       if ctrld.get('is_dupe',False) and is_warn: sublime.message_dialog("This file contains the same escaped control chars used to escape actual control chars!\n\nIf you save the file, these replacement chars will be unescaped and thus lost!")
@@ -93,11 +99,16 @@ class BinaryPlistToggleCommand(TextCommand):
     if file_name and file_name != '' and os.path.isfile(file_name) == True:
       bytes = view.substr(Region(0, view.size())).encode('utf-8')
       try:
-        pl = plistlib.loads(bytes, fmt=plistlib.FMT_XML)
+        cfg = sublime.load_settings("BinaryPlist.sublime-settings")
+        cfgv= view.settings()
+        uidict    = cfgv.get("BinaryPlist.uidict"      ,cfg.get("uidict"      ,None))
+        q_uid     = cfgv.get("BinaryPlist.q_uid"       ,cfg.get("q_uid"       ,None))
+        if not isinstance(uidict,bool): uidict = None
+        if not isinstance(q_uid ,str ): q_uid  = None
+
+        pl = plistlib.loads(bytes, fmt=plistlib.FMT_XML, uidict=uidict,q_uid=q_uid)
         with open(file_name, 'wb') as fp:
           ctrld = {}
-          cfg = sublime.load_settings("BinaryPlist.sublime-settings")
-          cfgv= view.settings()
           # Load pre/pos values from document's vars in case they were changed after load
           esc_pre = cfgv.get("BinaryPlist.esc_pre"     ,cfg.get("esc_pre"     ,None))
           esc_pos = cfgv.get("BinaryPlist.esc_pos"     ,cfg.get("esc_pos"     ,None))
@@ -109,6 +120,7 @@ class BinaryPlistToggleCommand(TextCommand):
           if not isinstance(indent ,str): indent  = None
           if not isinstance(sep_kv ,str): sep_kv  = None
           if not isinstance(max_ll ,int): max_ll  = None
+
           plistlib.dump(pl, fp, fmt=plistlib.FMT_BINARY, esc_pre=esc_pre,esc_pos=esc_pos, indent=indent, sep_kv=sep_kv, max_line_len=max_ll, ctrld=ctrld)
       except Exception as e:
         sublime.error_message(str(e))
