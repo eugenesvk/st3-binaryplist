@@ -1,7 +1,7 @@
 # Changelog
 All notable changes to this project will be documented in this file
 
-[unreleased]: https://github.com/eugenesvk/st3-binaryplist/compare/4205-1.0.3006...HEAD
+[unreleased]: https://github.com/eugenesvk/st3-binaryplist/compare/4205-1.0.3007...HEAD
 ## [Unreleased]
 <!-- - ✨ __Added__ -->
   <!-- + new features -->
@@ -16,6 +16,8 @@ All notable changes to this project will be documented in this file
 <!-- - 🔒 __Security__ -->
   <!-- + vulnerabilities -->
 
+[4205-1.0.3007]: https://github.com/eugenesvk/st3-binaryplist/releases/tag/4205-1.0.3007
+## [4205-1.0.3007]
 - ✨ __Added__
   + alternative `UID` encoding option for better reading/editing experience (optional, user-customizable prefix):
     - `<integer>٠123</integer>` instead of
