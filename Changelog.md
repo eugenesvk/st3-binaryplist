@@ -16,6 +16,9 @@ All notable changes to this project will be documented in this file
 <!-- - 🔒 __Security__ -->
   <!-- + vulnerabilities -->
 
+- 🐞 __Fixed__
+  + corruption on save when using custom UID escape mode (all ints were saved as UIDs)
+
 [4205-1.0.3008]: https://github.com/eugenesvk/st3-binaryplist/releases/tag/4205-1.0.3008
 ## [4205-1.0.3008]
 - 🐞 __Fixed__
