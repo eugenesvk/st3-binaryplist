@@ -16,6 +16,11 @@ All notable changes to this project will be documented in this file
 <!-- - 🔒 __Security__ -->
   <!-- + vulnerabilities -->
 
+- ✨ __Added__
+  + alternative `UID` encoding option for better reading/editing experience (optional, user-customizable prefix):
+    - `<integer>٠123</integer>` instead of
+    - `<dict><key>CF$UID</key><integer>123</integer></dict>`
+
 [4205-1.0.3006]: https://github.com/eugenesvk/st3-binaryplist/releases/tag/4205-1.0.3006
 ## [4205-1.0.3006]
 - 🐞 __Fixed__
