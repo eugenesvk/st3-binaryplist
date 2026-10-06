@@ -21,8 +21,8 @@ All notable changes to this project will be documented in this file
 - 🐞 __Fixed__
   + buggy `UID` support, the Python std library only supported `UID` at the top level(?), not in dictionaries or arrays
 
-[1.0.3005]: https://github.com/eugenesvk/st3-binaryplist/releases/tag/1.0.3005
-## [1.0.3005]
+[4205-1.0.3005]: https://github.com/eugenesvk/st3-binaryplist/releases/tag/4205-1.0.3005
+## [4205-1.0.3005]
 - 🐞 __Fixed__
   + wrong defaults in user config template
 
