@@ -150,8 +150,9 @@ def get_dupe_comment(q1,q2):
   Saving the file will convert {q1}␡{q2} back to Delete  even if nothing was escaped, leading to a data loss❗
   Workaround: use alternative escape quotes in plugin settings -->
 """
-def get_uid_comment(q):
-    return f"""<!-- UIDs are escape-encoded by prefixing {q}⎀ with {repr(q)} -->"""
+def get_uid_comment(uidict,q):
+    if uidict: return f"""<!-- UIDs are "dict-escaped": <dict><key>CF$UID</key><integer>123</integer></dict> -->"""
+    else:      return f"""<!-- UIDs are escape-encoded by prefixing {q}⎀ with {repr(q)} -->"""
 
 import threading
 class Singleton(type): # doesn't deadlock: if both Class_1 and Class_2 implement old singleton pattern, calling the constructor of Class_1 in Class_2 (or vice versa) would dead-lock since all the classes implemented through that meta-class share the same lock
@@ -613,7 +614,7 @@ class _PlistWriter(_DumbXMLWriter):
 
         elif isinstance(value, (tuple, list)):
             self.write_array(value)
-        elif isinstance(value,UID): self.write_uid(value)
+        elif isinstance(value,UID): self.write_uid(value); self.is_uid = True
         else:
             raise TypeError("unsupported type: %s" % type(value))
 
