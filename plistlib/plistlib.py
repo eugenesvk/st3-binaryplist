@@ -218,7 +218,7 @@ class CFG(metaclass=Singleton):
 
         self.esc_comment  = get_esc_comment (q1,q2)
         self.dupe_comment = get_dupe_comment(q1,q2)
-        self.uid_comment  = get_uid_comment (q_uid)
+        self.uid_comment  = get_uid_comment (uidict,q_uid)
         (self.char_rep,self.char_rev) = self.fill_char_replace(q1,q2)
         self.e_cr = f"{q1}␍{q2}" # (incl. in ␍␊) is also escape-encoded due to Sublime Text corrupting mixed newlines
 
@@ -237,7 +237,8 @@ class CFG(metaclass=Singleton):
         if q_uid  is not None and isinstance(q_uid ,str):
           if  '\\' in q_uid .lower() :       q_uid  =  q_uid .encode("raw_unicode_escape").decode("unicode_escape")
         else:                                q_uid  = _q_uid  # ← reset ≝
-        if self.q_uid  != q_uid :       self.q_uid  =  q_uid; update_q2 = True
+        if q_uid != self.q_uid: self.q_uid = q_uid; q_uid = self.q_uid; update_q2 = True
+
         for    q in [q1,q2,q_uid]:
             if q in ctrl_esc_sym: raise ValueError(f"Escape quotes can't be control chars! {repr(q)} {q}")
         if update_q:
@@ -245,8 +246,12 @@ class CFG(metaclass=Singleton):
             self.dupe_comment = get_dupe_comment(q1,q2)
             (self.char_rep,self.char_rev) = self.fill_char_replace(q1,q2)
             self.e_cr = f"{q1}␍{q2}"
+
+        if uidict is not None and isinstance(uidict,bool): pass
+        else:                                             uidict =_uidict # ← reset ≝
+        if self.uidict != uidict:       self.uidict =  uidict; update_q2 = True
         if update_q2:
-            self.uid_comment  = get_uid_comment (q_uid)
+            self.uid_comment  = get_uid_comment(uidict,q_uid)
 
         if indent is not None and isinstance(indent,str):
           if  '\\' in indent.lower() :       indent =  indent.encode("raw_unicode_escape").decode("unicode_escape")
@@ -264,10 +269,6 @@ class CFG(metaclass=Singleton):
         else:                                             max_ll =_max_ll # ← reset ≝
         if self.max_ll != max_ll:       self.max_ll =  max_ll
 
-        if uidict is not None and isinstance(uidict,bool): pass
-        else:                                             uidict =_uidict # ← reset ≝
-        if self.uidict != uidict:       self.uidict =  uidict
-
     def reset(self):
         self.q1       = _q1
         self.q2       = _q2
@@ -278,10 +279,11 @@ class CFG(metaclass=Singleton):
         self.q_uid    = _q_uid
         q1 = self.q1
         q2 = self.q2
-        q_uid = self.q_uid
+        uidict = self.uidict
+        q_uid  = self.q_uid
         self.esc_comment  = get_esc_comment (q1,q2)
         self.dupe_comment = get_dupe_comment(q1,q2)
-        self.uid_comment  = get_uid_comment (q_uid)
+        self.uid_comment  = get_uid_comment (uidict,q_uid)
         (self.char_rep,self.char_rev) = self.fill_char_replace(q1,q2)
         self.e_cr = f"{q1}␍{q2}"
 
@@ -516,7 +518,7 @@ class _DumbXMLWriter:
         self._indent_level = indent_level
         self.indent = CFG().indent if indent is None else indent # "\t" todo: why is _PlistWriter b"\t"
         self.is_ctrl = False # signal when control chars are found
-        self.is_uid  = False # signal when UIDs are id-escaped
+        self.is_uid  = False # signal when UIDs are found
         self.is_dupe = False # warn when escaped sequence is already in the text
         self.sep_kv = CFG().sep_kv
         self.uidict = CFG().uidict
