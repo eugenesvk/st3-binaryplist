@@ -16,6 +16,9 @@ All notable changes to this project will be documented in this file
 <!-- - 🔒 __Security__ -->
   <!-- + vulnerabilities -->
 
+- 🐞 __Fixed__
+  + corruption on save when settings were changed between load and save. Strictly use configs when the document was loaded
+
 [4205-1.0.3007]: https://github.com/eugenesvk/st3-binaryplist/releases/tag/4205-1.0.3007
 ## [4205-1.0.3007]
 - ✨ __Added__
