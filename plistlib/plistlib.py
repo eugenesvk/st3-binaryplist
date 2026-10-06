@@ -173,7 +173,7 @@ _indent =b'\t'
 _sep_kv =b''
 _max_ll = 120
 _uidict = True
-_q_uid  = '🆔'
+_q_uid  = '٠'
 
 class CFG(metaclass=Singleton):
     is_init = False
