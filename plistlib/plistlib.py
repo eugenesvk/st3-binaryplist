@@ -113,7 +113,7 @@ class UID:
         return UID(d[UID.xml_key])
 
     def is_xml_esc_int(i): # tests for '🆔1'
-        return i and isinstance(i,str) and i.startswith(CFG().q_uid) and i.partition(CFG().q_uid)[2].isdigit()
+        return i and isinstance(i,str) and CFG().q_uid and i.startswith(CFG().q_uid) and i.partition(CFG().q_uid)[2].isdigit()
     def from_xml_int(i): # convert for '🆔1' to 1
         return i.partition(CFG().q_uid)[2] if UID.is_xml_esc_int(i) else i
     def from_xml_int_unchecked(i):
@@ -475,7 +475,7 @@ class _PlistParser:
 
     def end_integer(self):
         raw = self.get_data()
-        if not self._uidict:
+        if not self._uidict and self._q_uid:
             if raw.startswith(self._q_uid): raw = raw.partition(self._q_uid)[2]
         if raw.startswith('0x') or raw.startswith('0X'):
             self.add_object(int(raw, 16))
